@@ -56,3 +56,30 @@ AES Encryption: Secure sensitive user data, including income and expense records
 Two-Factor Authentication (2FA): Add an extra layer of security for user accounts.
 API Integration
 Use bank and payment platform APIs (e.g., Plaid, Alipay, WeChat Pay) for importing transaction data seamlessly.
+
++-------------------+
+|                   |
+|     (UI)   |
+|                   |
++---------+---------+
+          |
+          v
++---------+---------+
+|                   |
+|   (BLL)  |
+|                   |
++---------+---------+
+          |
+          v
++---------+---------+
+|                   |
+|  (DAL)  |
+|                   |
++---------+---------+
+          |
+          v
++---------+---------+
+|                   |
+|     (DB)    |
+|                   |
++-------------------+
