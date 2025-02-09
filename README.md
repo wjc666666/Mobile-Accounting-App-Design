@@ -86,4 +86,31 @@ Use bank and payment platform APIs (e.g., Plaid, Alipay, WeChat Pay) for importi
 
 ### + System Architecture Diagram
 
-+-------------------+ | | | User Interface (UI) | | | +---------+---------+ | v +---------+---------+ | | | Business Logic Layer (BLL) | | | +---------+---------+ | v +---------+---------+ | | | Data Access Layer (DAL) | | | +---------+---------+ | v +---------+---------+ | | | Database (DB) | | | +-------------------+
+<pre>
++-------------------+
+|                   |
+|  User Interface (UI)  |
+|                   |
++---------+---------+
+          |
+          v
++---------+---------+
+|                   |
+| Business Logic Layer (BLL)  |
+|                   |
++---------+---------+
+          |
+          v
++---------+---------+
+|                   |
+| Data Access Layer (DAL)  |
+|                   |
++---------+---------+
+          |
+          v
++---------+---------+
+|                   |
+|    Database (DB)   |
+|                   |
++-------------------+
+</pre>
