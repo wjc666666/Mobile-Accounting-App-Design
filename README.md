@@ -1,36 +1,58 @@
 # Mobile-Accounting-App-Design
 Project Overview
-+ This mobile app helps users track their income, expenses, and provides financial advice. It features income and expense management, financial health analysis, and chart visualizations to help users improve their financial management.
+
+This mobile app empowers users to manage their finances effectively by tracking income and expenses while offering actionable financial advice. 
+With features like financial health analysis, budget optimization, and dynamic chart visualizations, 
+the app aims to simplify personal financial management and help users make informed decisions.
+
+
 
 Features
-+ Income Management:
-+ Manually enter income details and view breakdowns in pie charts.
+Core Features：
+1.Income Management
 
-+ Expense Management:
-+ Import bank statements or payment records, categorize expenses, and highlight the largest spending areas.
+Manually input diverse income streams such as salaries, investments, and rental income.
+View income breakdowns and proportions using interactive pie charts.
+Expense Management
 
-+ Budget Analysis:
-+ Automatically calculate savings or debt and suggest optimal spending ratios.
+Import bank statements or payment records and automatically categorize expenses into predefined groups (e.g., food, transportation, entertainment).
+Highlight the largest spending areas for better cost control.
+Budget Analysis
 
-+ Chart Visualization:
-Display pie and bar charts for income and expense breakdowns.
+Automatically calculate monthly savings or debts.
+Provide recommendations to optimize spending ratios, ensuring a balanced budget.
+Chart Visualization
 
-+ Financial Health Advice:
-+ Analyze spending and provide advice on improving financial health.
+Generate pie and bar charts to visually represent income sources and expense distribution.
+Compare financial trends over time for better decision-making.
+Financial Health Advice
 
-+ Future Features
-+ API Integration:
-+ Automatically import transaction data from banks and payment platforms like PayPal, Alipay, and WeChat Pay.
+Analyze user spending patterns to identify areas for improvement.
+Offer personalized advice to improve overall financial stability and savings.
+Future Features
+API Integration
 
-+ Personalized Advice:
-+ AI-powered advice based on user spending habits.
+Enable automatic import of transaction data from popular banks and payment platforms such as PayPal, Alipay, and WeChat Pay.
+Personalized Advice
 
-+ Multi-Device Sync:
-Sync data across multiple devices for seamless management.
+Utilize AI to deliver tailored financial advice based on spending habits and income trends.
+Multi-Device Sync
 
-+ Tech Stack
-Frontend: React Native, Kotlin (Android)
-Backend: MySQL, Firebase/AWS
-Charting: MPAndroidChart
-Security: AES encryption, Two-factor Authentication
-API Integration: Bank and payment platform APIs
+Support synchronization across multiple devices, ensuring seamless data access and management.
+Advanced Analytics
+
+Incorporate predictive analysis for long-term financial planning and goal tracking.
+Tech Stack
+Frontend
+React Native: For cross-platform development (future iOS support).
+Kotlin: Primary language for Android app development.
+Backend
+MySQL: Relational database for structured data storage.
+Firebase/AWS: Cloud services for real-time data synchronization and backend hosting.
+Charting and Visualization
+MPAndroidChart: Generate interactive and visually appealing charts for financial insights.
+Security
+AES Encryption: Secure sensitive user data, including income and expense records.
+Two-Factor Authentication (2FA): Add an extra layer of security for user accounts.
+API Integration
+Use bank and payment platform APIs (e.g., Plaid, Alipay, WeChat Pay) for importing transaction data seamlessly.
