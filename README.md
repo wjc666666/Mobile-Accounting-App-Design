@@ -85,29 +85,4 @@ Two-Factor Authentication (2FA): Add an extra layer of security for user account
 Use bank and payment platform APIs (e.g., Plaid, Alipay, WeChat Pay) for importing transaction data seamlessly.
 
 + System Architecture Diagram
-+-------------------+
-|                   |
-|  User Interface (UI)  |
-|                   |
-+---------+---------+
-          |
-          v
-+---------+---------+
-|                   |
-| Business Logic Layer (BLL)  |
-|                   |
-+---------+---------+
-          |
-          v
-+---------+---------+
-|                   |
-| Data Access Layer (DAL)  |
-|                   |
-+---------+---------+
-          |
-          v
-+---------+---------+
-|                   |
-|    Database (DB)   |
-|                   |
-+-------------------+
++-------------------+ | | | User Interface (UI) | | | +---------+---------+ | v +---------+---------+ | | | Business Logic Layer (BLL) | | | +---------+---------+ | v +---------+---------+ | | | Data Access Layer (DAL) | | | +---------+---------+ | v +---------+---------+ | | | Database (DB) | | | +-------------------+
