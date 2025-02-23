@@ -35,7 +35,7 @@ app.post("/users/register", async (req, res) => {
 
     try {
         const hashedPassword = await bcrypt.hash(password, 10);
-        const sql = "INSERT INTO users (username, email, password) VALUES (?, ?, ?)";
+        const sql = "INSERT INTO users (username, email, password_hash) VALUES (?, ?, ?)";
         db.query(sql, [username, email, hashedPassword], (err, result) => {
             if (err) return res.status(500).json({ error: "Failed to register user: " + err.message });
             res.status(201).json({ message: "User registered successfully!" });
@@ -62,7 +62,10 @@ app.post("/users/login", (req, res) => {
         }
 
         const user = results[0];
-        const isMatch = await bcrypt.compare(password, user.password);
+
+        // 之前的错误：user.password
+        // 正确的做法：使用 user.password_hash
+        const isMatch = await bcrypt.compare(password, user.password_hash);
 
         if (!isMatch) {
             return res.status(401).json({ error: "Invalid email or password" });
