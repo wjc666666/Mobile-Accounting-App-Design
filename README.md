@@ -56,6 +56,12 @@ Support synchronization across multiple devices, ensuring seamless data access a
 
 Incorporate predictive analysis for long-term financial planning and goal tracking.
 
++ 5. Financial Health Advice
+
++ Analyze user spending patterns to identify areas for improvement.
+
++ Offer personalized recommendations to enhance financial stability and savings.
+
 + Tech Stack
 
 + Frontend
@@ -65,6 +71,8 @@ React Native: For cross-platform development (future iOS support).
 Kotlin: Primary language for Android app development.
 
 + Backend
+
+Node.js: Backend framework for handling API requests.
 
 MySQL: Relational database for structured data storage.
 
