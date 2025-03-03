@@ -9,7 +9,15 @@ const app = express();
 app.use(cors());
 app.use(express.json());
 
-// 连接数据库
+// ✅ 确保 `.env` 变量正确加载
+console.log("✅ Loaded environment variables:");
+console.log("DB_HOST:", process.env.DB_HOST);
+console.log("DB_USER:", process.env.DB_USER);
+console.log("DB_DATABASE:", process.env.DB_DATABASE);
+console.log("JWT_SECRET:", process.env.JWT_SECRET ? "✅ Loaded" : "❌ Not Loaded");
+console.log("PORT:", process.env.PORT);
+
+// ✅ 连接 MySQL 数据库
 const db = mysql.createConnection({
     host: process.env.DB_HOST,
     user: process.env.DB_USER,
@@ -19,16 +27,16 @@ const db = mysql.createConnection({
 
 db.connect(err => {
     if (err) {
-        console.error("❌ Database connection failed: " + err.message);
+        console.error("❌ Database connection failed:", err.message);
     } else {
         console.log("✅ Successfully connected to MySQL database!");
     }
 });
 
-// 用户注册 API（支持密码加密）
+// ✅ 用户注册（密码加密）
 app.post("/users/register", async (req, res) => {
     const { username, email, password } = req.body;
-    
+
     if (!username || !email || !password) {
         return res.status(400).json({ error: "Missing required fields" });
     }
@@ -37,15 +45,20 @@ app.post("/users/register", async (req, res) => {
         const hashedPassword = await bcrypt.hash(password, 10);
         const sql = "INSERT INTO users (username, email, password_hash) VALUES (?, ?, ?)";
         db.query(sql, [username, email, hashedPassword], (err, result) => {
-            if (err) return res.status(500).json({ error: "Failed to register user: " + err.message });
+            if (err) {
+                console.error("❌ Registration failed:", err.message);
+                return res.status(500).json({ error: "Failed to register user: " + err.message });
+            }
+            console.log("✅ User registered:", username);
             res.status(201).json({ message: "User registered successfully!" });
         });
     } catch (error) {
+        console.error("❌ Internal server error:", error.message);
         res.status(500).json({ error: "Internal server error" });
     }
 });
 
-// 用户登录 API（使用 JWT）
+// ✅ 用户登录（JWT 认证）
 app.post("/users/login", (req, res) => {
     const { email, password } = req.body;
 
@@ -55,104 +68,78 @@ app.post("/users/login", (req, res) => {
 
     const sql = "SELECT * FROM users WHERE email = ?";
     db.query(sql, [email], async (err, results) => {
-        if (err) return res.status(500).json({ error: "Database error: " + err.message });
+        if (err) {
+            console.error("❌ Database error:", err.message);
+            return res.status(500).json({ error: "Database error: " + err.message });
+        }
 
         if (results.length === 0) {
+            console.warn("⚠️ Invalid login attempt:", email);
             return res.status(401).json({ error: "Invalid email or password" });
         }
 
         const user = results[0];
-
-        // 之前的错误：user.password
-        // 正确的做法：使用 user.password_hash
         const isMatch = await bcrypt.compare(password, user.password_hash);
 
         if (!isMatch) {
+            console.warn("⚠️ Password mismatch for user:", email);
             return res.status(401).json({ error: "Invalid email or password" });
         }
 
         // 生成 JWT 令牌
         const token = jwt.sign({ userId: user.id }, process.env.JWT_SECRET, { expiresIn: "1h" });
+        console.log("✅ Login successful for:", email);
 
         res.json({ message: "Login successful!", token });
     });
 });
 
-// 保护 API（中间件）
+// ✅ 保护 API（JWT 认证中间件）
 const verifyToken = (req, res, next) => {
     const authHeader = req.headers["authorization"];
+
+    console.log("🛠️ Received Authorization Header:", authHeader);
+
     if (!authHeader || !authHeader.startsWith("Bearer ")) {
-        return res.status(403).json({ error: "No token provided" });
+        console.warn("⚠️ No valid token provided");
+        return res.status(403).json({ error: "No valid token provided" });
     }
 
     const token = authHeader.split(" ")[1];
 
+    console.log("🛠️ Extracted Token:", token);
+    console.log("🛠️ Expected JWT_SECRET:", process.env.JWT_SECRET);
+
     jwt.verify(token, process.env.JWT_SECRET, (err, decoded) => {
         if (err) {
-            return res.status(401).json({ error: "Unauthorized access" });
+            console.error("❌ JWT Verification Failed:", err.message);
+            return res.status(401).json({ error: "Unauthorized access, invalid token" });
         }
+        console.log("✅ Token Verified, User ID:", decoded.userId);
         req.userId = decoded.userId;
         next();
     });
 };
 
-// 获取用户信息（需要 JWT 认证）
+// ✅ 获取用户信息（需要 JWT 认证）
 app.get("/users/profile", verifyToken, (req, res) => {
     const sql = "SELECT id, username, email FROM users WHERE id = ?";
     db.query(sql, [req.userId], (err, results) => {
-        if (err) return res.status(500).json({ error: err.message });
+        if (err) {
+            console.error("❌ Database Query Failed:", err.message);
+            return res.status(500).json({ error: err.message });
+        }
+
+        if (results.length === 0) {
+            console.warn("⚠️ User not found in database, ID:", req.userId);
+            return res.status(404).json({ error: "User not found" });
+        }
+
+        console.log("✅ User Profile Found:", results[0]);
         res.json(results[0]);
     });
 });
 
-// 获取收入（需要 JWT 认证）
-app.get("/income", verifyToken, (req, res) => {
-    const sql = "SELECT * FROM income WHERE user_id = ?";
-    db.query(sql, [req.userId], (err, results) => {
-        if (err) return res.status(500).json({ error: err.message });
-        res.json(results);
-    });
-});
-
-// 获取支出（需要 JWT 认证）
-app.get("/expenses", verifyToken, (req, res) => {
-    const sql = "SELECT * FROM expenses WHERE user_id = ?";
-    db.query(sql, [req.userId], (err, results) => {
-        if (err) return res.status(500).json({ error: err.message });
-        res.json(results);
-    });
-});
-
-// 记录收入（需要 JWT 认证）
-app.post("/income", verifyToken, (req, res) => {
-    const { amount, category, date } = req.body;
-
-    if (!amount || !category || !date) {
-        return res.status(400).json({ error: "Missing required fields" });
-    }
-
-    const sql = "INSERT INTO income (user_id, amount, category, date) VALUES (?, ?, ?, ?)";
-    db.query(sql, [req.userId, amount, category, date], (err, result) => {
-        if (err) return res.status(500).json({ error: err.message });
-        res.status(201).json({ message: "Income added successfully!" });
-    });
-});
-
-// 记录支出（需要 JWT 认证）
-app.post("/expenses", verifyToken, (req, res) => {
-    const { amount, category, date } = req.body;
-
-    if (!amount || !category || !date) {
-        return res.status(400).json({ error: "Missing required fields" });
-    }
-
-    const sql = "INSERT INTO expenses (user_id, amount, category, date) VALUES (?, ?, ?, ?)";
-    db.query(sql, [req.userId, amount, category, date], (err, result) => {
-        if (err) return res.status(500).json({ error: err.message });
-        res.status(201).json({ message: "Expense added successfully!" });
-    });
-});
-
-// 启动服务器
+// ✅ 启动服务器
 const PORT = process.env.PORT || 5000;
-app.listen(PORT, () => console.log(`✅ Server is running at http://localhost:${PORT}`));
+app.listen(PORT, () => console.log(`✅ Server is running at http://0.0.0.0:${PORT}`));
