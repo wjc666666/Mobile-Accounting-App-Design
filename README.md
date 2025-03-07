@@ -1,118 +1,198 @@
-# Mobile Accounting App Design
+# 移动记账应用
 
-## Project Overview
+一个功能完整的移动记账应用，包括前端和后端实现。
 
-This mobile app empowers users to manage their finances effectively by tracking income and expenses while offering actionable financial advice. With features like financial health analysis, budget optimization, and dynamic chart visualizations, the app aims to simplify personal financial management and help users make informed decisions.
-
-## Features
-
-### Core Features
-
-#### 1. Income Management
-
-- Manually input diverse income streams such as salaries, investments, and rental income.
-- View income breakdowns and proportions using interactive pie charts.
-
-#### 2. Expense Management
-
-- Import bank statements or payment records and automatically categorize expenses into predefined groups (e.g., food, transportation, entertainment).
-- Highlight the largest spending areas for better cost control.
-
-#### 3. Budget Analysis
-
-- Automatically calculate monthly savings or debts.
-- Provide recommendations to optimize spending ratios, ensuring a balanced budget.
-
-#### 4. Chart Visualization
-
-- Generate pie and bar charts to visually represent income sources and expense distribution.
-- Compare financial trends over time for better decision-making.
-
-#### 5. Financial Health Advice
-
-- Analyze user spending patterns to identify areas for improvement.
-- Offer personalized advice to improve overall financial stability and savings.
-
-### Future Features
-
-#### 1. API Integration
-
-- Enable automatic import of transaction data from popular banks and payment platforms such as PayPal, Alipay, and WeChat Pay.
-
-#### 2. Personalized Advice
-
-- Utilize AI to deliver tailored financial advice based on spending habits and income trends.
-
-#### 3. Multi-Device Sync
-
-- Support synchronization across multiple devices, ensuring seamless data access and management.
-
-#### 4. Advanced Analytics
-
-- Incorporate predictive analysis for long-term financial planning and goal tracking.
-
-## Tech Stack
-
-### Frontend
-
-- React Native: For cross-platform development (future iOS support).
-- React Navigation: For app navigation.
-- React Native Paper: UI component library.
-
-### Backend
-
-- Node.js: Backend framework for handling API requests.
-- Express.js: Web application framework for Node.js.
-- MySQL: Relational database for structured data storage.
-
-### Charting and Visualization
-
-- React Native Chart Kit: Generate interactive and visually appealing charts for financial insights.
-
-### Security
-
-- AES Encryption: Secure sensitive user data, including income and expense records.
-- JWT Authentication: Secure user authentication.
-
-## System Architecture Diagram
+## 项目结构
 
 ```
-+-------------------+
-|                   |
-|  User Interface (UI)  |
-|                   |
-+---------+---------+
-          |
-          v
-+---------+---------+
-|                   |
-| Business Logic Layer (BLL)  |
-|                   |
-+---------+---------+
-          |
-          v
-+---------+---------+
-|                   |
-| Data Access Layer (DAL)  |
-|                   |
-+---------+---------+
-          |
-          v
-+---------+---------+
-|                   |
-|    Database (DB)   |
-|                   |
-+-------------------+
+/
+├── frontend/           # React Native 前端
+│   └── JCEco/          # 前端项目目录
+│       ├── src/        # 源代码
+│       │   ├── components/  # 可复用组件
+│       │   ├── screens/     # 屏幕组件
+│       │   ├── navigation/  # 导航配置
+│       │   └── utils/       # 工具函数和API
+│       ├── android/    # Android 配置
+│       └── ios/        # iOS 配置
+└── backend/            # Node.js 后端
+    ├── server.js       # 服务器入口
+    ├── database.sql    # 数据库脚本
+    └── .env            # 环境变量配置
 ```
 
-## Implementation Details
+## 技术栈
 
-This project is implemented using React Native for the frontend. The application includes:
+### 前端
+- React Native
+- React Navigation
+- React Native Paper
+- Axios
+- AsyncStorage
 
-- Home screen with financial overview
-- Income tracking screen
-- Expense tracking screen
-- Statistics and visualization screen
-- Settings screen
+### 后端
+- Node.js
+- Express.js
+- MySQL
+- JWT 认证
+- Bcrypt 密码加密
 
-The navigation is handled using React Navigation with a bottom tab navigator for the main screens.
+## 功能特性
+
+- 用户认证（注册、登录、登出）
+- 收入记录管理
+- 支出记录管理
+- 财务概览和统计
+- 预算分析
+
+## 安装和运行
+
+### 前提条件
+- Node.js (v14+)
+- npm 或 yarn
+- MySQL 数据库
+- Android Studio (用于Android开发)
+- Xcode (用于iOS开发，仅Mac)
+
+### 后端设置
+
+1. 进入后端目录
+```bash
+cd backend
+```
+
+2. 安装依赖
+```bash
+npm install
+```
+
+3. 创建数据库和表
+```bash
+mysql -u root -p < database.sql
+```
+
+4. 配置环境变量
+创建 `.env` 文件，内容如下：
+```
+DB_HOST=127.0.0.1
+DB_USER=root
+DB_PASSWORD=你的数据库密码
+DB_DATABASE=mobile_accounting_db
+JWT_SECRET=你的密钥
+PORT=5000
+```
+
+5. 启动服务器
+```bash
+node server.js
+```
+
+### 前端设置
+
+1. 进入前端目录
+```bash
+cd frontend/JCEco
+```
+
+2. 安装依赖
+```bash
+npm install
+```
+
+3. 启动Metro服务器
+```bash
+npm start
+```
+
+4. 在新的终端中运行应用
+```bash
+# 对于Android
+npm run android
+
+# 对于iOS
+npm run ios
+```
+
+## API文档
+
+### 用户认证
+
+#### 注册
+- **URL**: `/users/register`
+- **方法**: `POST`
+- **请求体**:
+  ```json
+  {
+    "username": "用户名",
+    "email": "邮箱",
+    "password": "密码"
+  }
+  ```
+
+#### 登录
+- **URL**: `/users/login`
+- **方法**: `POST`
+- **请求体**:
+  ```json
+  {
+    "email": "邮箱",
+    "password": "密码"
+  }
+  ```
+
+### 收入管理
+
+#### 添加收入
+- **URL**: `/income`
+- **方法**: `POST`
+- **认证**: 需要JWT令牌
+- **请求体**:
+  ```json
+  {
+    "amount": 1000,
+    "category": "Salary",
+    "date": "2023-03-01",
+    "description": "月薪"
+  }
+  ```
+
+#### 获取收入记录
+- **URL**: `/income`
+- **方法**: `GET`
+- **认证**: 需要JWT令牌
+
+### 支出管理
+
+#### 添加支出
+- **URL**: `/expenses`
+- **方法**: `POST`
+- **认证**: 需要JWT令牌
+- **请求体**:
+  ```json
+  {
+    "amount": 100,
+    "category": "Food",
+    "date": "2023-03-05",
+    "description": "晚餐"
+  }
+  ```
+
+#### 获取支出记录
+- **URL**: `/expenses`
+- **方法**: `GET`
+- **认证**: 需要JWT令牌
+
+### 预算分析
+
+#### 获取预算分析
+- **URL**: `/budget/analysis`
+- **方法**: `GET`
+- **认证**: 需要JWT令牌
+
+## 贡献
+
+欢迎提交问题和拉取请求。
+
+## 许可证
+
+MIT
