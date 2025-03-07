@@ -1,7 +1,8 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState } from 'react';
 import { View, Text, StyleSheet, ScrollView, ActivityIndicator, RefreshControl, TouchableOpacity } from 'react-native';
 import { incomeAPI, expenseAPI, budgetAPI } from '../utils/api';
 import { useAuth } from '../utils/AuthContext';
+import { useFocusEffect } from '@react-navigation/native';
 
 interface Transaction {
   id: number;
@@ -20,11 +21,15 @@ const HomeScreen = () => {
   const [budgetAnalysis, setBudgetAnalysis] = useState<any>(null);
   const [error, setError] = useState<string | null>(null);
 
+  // 确保incomes和expenses是数组
+  const safeIncomes = Array.isArray(incomes) ? incomes : [];
+  const safeExpenses = Array.isArray(expenses) ? expenses : [];
+
   // Calculate total income
-  const totalIncome = incomes.reduce((sum, income) => sum + income.amount, 0);
+  const totalIncome = safeIncomes.reduce((sum, income) => sum + income.amount, 0);
   
   // Calculate total expenses
-  const totalExpense = expenses.reduce((sum, expense) => sum + expense.amount, 0);
+  const totalExpense = safeExpenses.reduce((sum, expense) => sum + expense.amount, 0);
   
   // Calculate balance
   const balance = totalIncome - totalExpense;
@@ -33,31 +38,59 @@ const HomeScreen = () => {
   const fetchData = async () => {
     try {
       setError(null);
+      console.log('开始获取数据...');
       
       // Get income data
+      console.log('获取收入数据...');
       const incomesData = await incomeAPI.getIncomes();
-      setIncomes(incomesData);
+      console.log('收入数据:', incomesData);
+      setIncomes(Array.isArray(incomesData) ? incomesData : []);
       
       // Get expense data
+      console.log('获取支出数据...');
       const expensesData = await expenseAPI.getExpenses();
-      setExpenses(expensesData);
+      console.log('支出数据:', expensesData);
+      setExpenses(Array.isArray(expensesData) ? expensesData : []);
       
       // Get budget analysis
+      console.log('获取预算分析...');
       const budgetData = await budgetAPI.getBudgetAnalysis();
-      setBudgetAnalysis(budgetData);
-    } catch (error) {
-      console.error('Failed to fetch data:', error);
-      setError('Failed to fetch data. Please try again later.');
+      console.log('预算分析:', budgetData);
+      setBudgetAnalysis(budgetData || {});
+      
+      console.log('所有数据获取完成');
+    } catch (error: any) {
+      console.error('获取数据失败:', error);
+      let errorMessage = 'Failed to fetch data. Please try again later.';
+      if (error.response) {
+        // 服务器响应了，但状态码不在2xx范围内
+        errorMessage = `Server error: ${error.response.status} - ${error.response.data.error || error.response.statusText}`;
+        console.error('错误响应:', error.response.data);
+      } else if (error.request) {
+        // 请求已发送，但没有收到响应
+        errorMessage = 'No response from server. Please check your connection.';
+        console.error('无响应:', error.request);
+      } else {
+        // 设置请求时发生了错误
+        errorMessage = `Error: ${error.message}`;
+      }
+      setError(errorMessage);
     } finally {
       setIsLoading(false);
       setIsRefreshing(false);
     }
   };
 
-  // Fetch data on component mount
-  useEffect(() => {
-    fetchData();
-  }, []);
+  // Fetch data on component mount and when screen is focused
+  useFocusEffect(
+    React.useCallback(() => {
+      console.log('主页面获得焦点，刷新数据...');
+      fetchData();
+      return () => {
+        // 页面失去焦点时的清理工作（如果需要）
+      };
+    }, [])
+  );
 
   // Pull to refresh
   const onRefresh = () => {
@@ -72,14 +105,17 @@ const HomeScreen = () => {
 
   // Format amount
   const formatAmount = (amount: number) => {
+    if (amount === undefined || amount === null) {
+      return '$0.00';
+    }
     return `$${amount.toFixed(2)}`;
   };
 
   // Get recent transactions
   const getRecentTransactions = () => {
     const allTransactions = [
-      ...incomes.map(income => ({ ...income, type: 'income' })),
-      ...expenses.map(expense => ({ ...expense, type: 'expense' }))
+      ...safeIncomes.map(income => ({ ...income, type: 'income' })),
+      ...safeExpenses.map(expense => ({ ...expense, type: 'expense' }))
     ];
     
     // Sort by date, newest first
@@ -118,6 +154,15 @@ const HomeScreen = () => {
       {error && (
         <View style={styles.errorContainer}>
           <Text style={styles.errorText}>{error}</Text>
+          <TouchableOpacity 
+            style={styles.retryButton} 
+            onPress={() => {
+              setIsLoading(true);
+              fetchData();
+            }}
+          >
+            <Text style={styles.retryButtonText}>Retry</Text>
+          </TouchableOpacity>
         </View>
       )}
       
@@ -331,6 +376,17 @@ const styles = StyleSheet.create({
   emptyStateText: {
     color: '#999',
     fontSize: 16,
+  },
+  retryButton: {
+    backgroundColor: '#3498db',
+    paddingVertical: 8,
+    paddingHorizontal: 12,
+    borderRadius: 20,
+    marginTop: 10,
+  },
+  retryButtonText: {
+    color: 'white',
+    fontWeight: 'bold',
   },
 });
 

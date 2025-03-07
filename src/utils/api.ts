@@ -6,7 +6,10 @@ import axios from 'axios';
 let memoryToken: string | null = null;
 
 // 后端API基础URL
-const API_BASE_URL = 'http://10.0.2.2:5000'; // 在Android模拟器中访问本地主机
+// 在Android模拟器中访问本地主机需要使用10.0.2.2
+// 在真机上测试时需要使用实际的IP地址
+const API_BASE_URL = 'http://10.0.2.2:5000';
+console.log('API基础URL:', API_BASE_URL);
 
 // 创建axios实例
 const api = axios.create({
@@ -14,7 +17,42 @@ const api = axios.create({
   headers: {
     'Content-Type': 'application/json',
   },
+  // 添加超时设置
+  timeout: 10000,
 });
+
+// 添加请求拦截器，用于调试
+api.interceptors.request.use(
+  (config) => {
+    console.log('发送请求:', config.method, config.url, config.data);
+    return config;
+  },
+  (error) => {
+    console.error('请求错误:', error);
+    return Promise.reject(error);
+  }
+);
+
+// 添加响应拦截器，用于调试
+api.interceptors.response.use(
+  (response) => {
+    console.log('API Response:', response.config.url, response.status);
+    return response;
+  },
+  (error) => {
+    if (error.response) {
+      // 服务器响应了，但状态码不在2xx范围内
+      console.error('API Error:', error.config?.url, error.response.status, error.response.data);
+    } else if (error.request) {
+      // 请求已发送，但没有收到响应
+      console.error('API No Response:', error.config?.url, error.request);
+    } else {
+      // 设置请求时发生了错误
+      console.error('API Request Error:', error.message);
+    }
+    return Promise.reject(error);
+  }
+);
 
 // 请求拦截器 - 添加认证令牌
 api.interceptors.request.use(
@@ -93,6 +131,7 @@ export const incomeAPI = {
     description: string;
   }) => {
     try {
+      // 发送所有字段，包括description
       const response = await api.post('/income', incomeData);
       return response.data;
     } catch (error) {
@@ -123,6 +162,7 @@ export const expenseAPI = {
     description: string;
   }) => {
     try {
+      // 发送所有字段，包括description
       const response = await api.post('/expenses', expenseData);
       return response.data;
     } catch (error) {

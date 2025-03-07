@@ -1,6 +1,7 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState } from 'react';
 import { View, Text, StyleSheet, ScrollView, ActivityIndicator, RefreshControl } from 'react-native';
 import { incomeAPI, expenseAPI } from '../utils/api';
+import { useFocusEffect } from '@react-navigation/native';
 
 const StatisticsScreen = () => {
   const [isLoading, setIsLoading] = useState(true);
@@ -22,16 +23,21 @@ const StatisticsScreen = () => {
   const fetchData = async () => {
     try {
       setError(null);
+      console.log('正在获取统计数据...');
       
       // Get income data
       const incomesData = await incomeAPI.getIncomes();
+      console.log('收入数据:', incomesData);
+      
+      // 确保incomesData是数组
+      const safeIncomesData = Array.isArray(incomesData) ? incomesData : [];
       
       // Calculate total income
-      const totalIncome = incomesData.reduce((sum: number, income: any) => sum + income.amount, 0);
+      const totalIncome = safeIncomesData.reduce((sum: number, income: any) => sum + income.amount, 0);
       
       // Group incomes by category and calculate percentages
       const incomeCategories = {} as Record<string, number>;
-      incomesData.forEach((income: any) => {
+      safeIncomesData.forEach((income: any) => {
         if (incomeCategories[income.category]) {
           incomeCategories[income.category] += income.amount;
         } else {
@@ -59,13 +65,17 @@ const StatisticsScreen = () => {
       
       // Get expense data
       const expensesData = await expenseAPI.getExpenses();
+      console.log('支出数据:', expensesData);
+      
+      // 确保expensesData是数组
+      const safeExpensesData = Array.isArray(expensesData) ? expensesData : [];
       
       // Calculate total expenses
-      const totalExpense = expensesData.reduce((sum: number, expense: any) => sum + expense.amount, 0);
+      const totalExpense = safeExpensesData.reduce((sum: number, expense: any) => sum + expense.amount, 0);
       
       // Group expenses by category and calculate percentages
       const expenseCategories = {} as Record<string, number>;
-      expensesData.forEach((expense: any) => {
+      safeExpensesData.forEach((expense: any) => {
         if (expenseCategories[expense.category]) {
           expenseCategories[expense.category] += expense.amount;
         } else {
@@ -100,10 +110,16 @@ const StatisticsScreen = () => {
     }
   };
 
-  // Fetch data on component mount
-  useEffect(() => {
-    fetchData();
-  }, []);
+  // 使用useFocusEffect代替useEffect，在每次页面聚焦时刷新数据
+  useFocusEffect(
+    React.useCallback(() => {
+      console.log('统计页面获得焦点，刷新数据...');
+      fetchData();
+      return () => {
+        // 页面失去焦点时的清理工作（如果需要）
+      };
+    }, [])
+  );
 
   // Pull to refresh
   const onRefresh = () => {
@@ -113,6 +129,9 @@ const StatisticsScreen = () => {
 
   // Format amount
   const formatAmount = (amount: number) => {
+    if (amount === undefined || amount === null) {
+      return '$0.00';
+    }
     return `$${amount.toFixed(2)}`;
   };
 

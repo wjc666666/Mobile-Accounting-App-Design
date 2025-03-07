@@ -12,6 +12,7 @@ import StatisticsScreen from '../screens/StatisticsScreen';
 import SettingsScreen from '../screens/SettingsScreen';
 import LoginScreen from '../screens/LoginScreen';
 import RegisterScreen from '../screens/RegisterScreen';
+import TestScreen from '../screens/TestScreen';
 
 // Import auth context
 import { useAuth } from '../utils/AuthContext';
@@ -37,6 +38,7 @@ const AuthNavigator = () => {
     <AuthStack.Navigator screenOptions={{ headerShown: false }}>
       <AuthStack.Screen name="Login" component={LoginScreen} />
       <AuthStack.Screen name="Register" component={RegisterScreen} />
+      <AuthStack.Screen name="Test" component={TestScreen} />
     </AuthStack.Navigator>
   );
 };
@@ -82,6 +84,7 @@ const SettingsStack = () => {
   return (
     <Stack.Navigator screenOptions={{ headerShown: false }}>
       <Stack.Screen name="SettingsMain" component={SettingsScreen} />
+      <Stack.Screen name="Test" component={TestScreen} />
     </Stack.Navigator>
   );
 };
@@ -138,24 +141,44 @@ const MainAppNavigator = () => {
           tabBarIcon: ({ focused }) => <TabIcon name="Settings" focused={focused} />,
         }}
       />
+      <Tab.Screen
+        name="Test"
+        component={TestScreen}
+        options={{
+          tabBarIcon: ({ focused }) => <TabIcon name="Test" focused={focused} />,
+        }}
+      />
     </Tab.Navigator>
   );
 };
 
 // Main app navigator
 const AppNavigator = () => {
-  const { isLoading, isLoggedIn } = useAuth();
+  const { isLoading, isLoggedIn, user } = useAuth();
+
+  console.log('AppNavigator渲染:', { isLoading, isLoggedIn, user });
 
   if (isLoading) {
     return (
       <View style={styles.loadingContainer}>
         <ActivityIndicator size="large" color="#3498db" />
+        <Text style={styles.loadingText}>Loading...</Text>
       </View>
     );
   }
 
+  // 在渲染前记录状态
+  if (isLoggedIn) {
+    console.log('渲染主应用导航');
+  } else {
+    console.log('渲染认证导航');
+  }
+
   return (
-    <NavigationContainer>
+    <NavigationContainer
+      onStateChange={(state) => console.log('导航状态变化:', state)}
+      onReady={() => console.log('导航容器已准备好')}
+    >
       {isLoggedIn ? <MainAppNavigator /> : <AuthNavigator />}
     </NavigationContainer>
   );
@@ -197,6 +220,12 @@ const styles = StyleSheet.create({
     fontSize: 24,
     fontWeight: 'bold',
     marginBottom: 20,
+    color: '#3498db',
+  },
+  loadingText: {
+    marginTop: 10,
+    fontSize: 16,
+    fontWeight: 'bold',
     color: '#3498db',
   },
 });

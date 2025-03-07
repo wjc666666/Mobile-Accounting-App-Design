@@ -36,18 +36,32 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
   useEffect(() => {
     const checkLoginStatus = async () => {
       try {
+        console.log('检查登录状态...');
         // 使用内存中的令牌代替 AsyncStorage
         const token = memoryToken;
         if (token) {
+          console.log('找到令牌，获取用户信息...');
           // 获取用户信息
           const userData = await userAPI.getProfile();
+          console.log('获取到用户信息:', userData);
           setUser(userData);
           setIsLoggedIn(true);
+        } else {
+          console.log('未找到令牌，用户未登录');
         }
-      } catch (error) {
+      } catch (error: any) {
         console.error('检查登录状态失败:', error);
+        if (error.response) {
+          console.error('错误响应:', error.response.status, error.response.data);
+        } else if (error.request) {
+          console.error('无响应:', error.request);
+        } else {
+          console.error('错误:', error.message);
+        }
         // 如果获取用户信息失败，清除令牌
         memoryToken = null;
+        setUser(null);
+        setIsLoggedIn(false);
       } finally {
         setIsLoading(false);
       }
@@ -60,16 +74,27 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
   const login = async (email: string, password: string) => {
     setIsLoading(true);
     try {
+      console.log('尝试登录...');
       const response = await userAPI.login({ email, password });
+      console.log('登录响应:', response);
       if (response.token) {
         // 保存令牌到内存
         memoryToken = response.token;
+        console.log('令牌已保存，获取用户信息...');
         const userData = await userAPI.getProfile();
+        console.log('获取到用户信息:', userData);
         setUser(userData);
         setIsLoggedIn(true);
       }
-    } catch (error) {
+    } catch (error: any) {
       console.error('登录失败:', error);
+      if (error.response) {
+        console.error('错误响应:', error.response.status, error.response.data);
+      } else if (error.request) {
+        console.error('无响应:', error.request);
+      } else {
+        console.error('错误:', error.message);
+      }
       throw error;
     } finally {
       setIsLoading(false);
