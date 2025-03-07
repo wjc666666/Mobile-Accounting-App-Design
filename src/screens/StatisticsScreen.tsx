@@ -23,102 +23,303 @@ const StatisticsScreen = () => {
   const fetchData = async () => {
     try {
       setError(null);
-      console.log('正在获取统计数据...');
+      console.log('Fetching statistics data...');
       
       // Get income data
+      console.log('Calling incomeAPI.getIncomes()...');
       const incomesData = await incomeAPI.getIncomes();
-      console.log('收入数据:', incomesData);
+      console.log('Raw income data received:', incomesData);
+      console.log('Income data type:', typeof incomesData);
+      console.log('Is income data array?', Array.isArray(incomesData));
       
-      // 确保incomesData是数组
+      // Ensure incomesData is an array
       const safeIncomesData = Array.isArray(incomesData) ? incomesData : [];
+      console.log('Safe income data length:', safeIncomesData.length);
       
-      // Calculate total income
-      const totalIncome = safeIncomesData.reduce((sum: number, income: any) => sum + income.amount, 0);
-      
-      // Group incomes by category and calculate percentages
-      const incomeCategories = {} as Record<string, number>;
-      safeIncomesData.forEach((income: any) => {
-        if (incomeCategories[income.category]) {
-          incomeCategories[income.category] += income.amount;
-        } else {
-          incomeCategories[income.category] = income.amount;
-        }
-      });
-      
-      const incomeCategoriesArray = Object.keys(incomeCategories).map(category => {
-        const amount = incomeCategories[category];
-        const percentage = totalIncome > 0 ? (amount / totalIncome) * 100 : 0;
-        return {
-          name: category,
-          amount,
-          percentage: parseFloat(percentage.toFixed(1)),
-        };
-      });
-      
-      // Sort by amount (highest first)
-      incomeCategoriesArray.sort((a, b) => b.amount - a.amount);
-      
-      setIncomeData({
-        total: totalIncome,
-        categories: incomeCategoriesArray,
-      });
+      // Debug first income item if available
+      if (safeIncomesData.length > 0) {
+        console.log('First income item:', JSON.stringify(safeIncomesData[0]));
+        console.log('First income amount:', safeIncomesData[0].amount);
+        console.log('First income amount type:', typeof safeIncomesData[0].amount);
+        
+        // Convert string amounts to numbers if needed
+        const processedIncomes = safeIncomesData.map((income: any) => {
+          let numAmount = 0;
+          if (typeof income.amount === 'string') {
+            numAmount = parseFloat(income.amount);
+            console.log(`Converted string amount "${income.amount}" to number: ${numAmount}`);
+          } else if (typeof income.amount === 'number') {
+            numAmount = income.amount;
+          } else {
+            console.log(`Unknown amount type: ${typeof income.amount}, value:`, income.amount);
+          }
+          
+          return {
+            ...income,
+            amount: numAmount
+          };
+        });
+        
+        console.log('Processed incomes:', processedIncomes);
+        
+        // Calculate total income with processed data
+        const totalIncome = processedIncomes.reduce((sum: number, income: any) => {
+          return sum + (isNaN(income.amount) ? 0 : income.amount);
+        }, 0);
+        console.log('Calculated total income:', totalIncome);
+        
+        // Group incomes by category with processed data
+        const incomeCategories = {} as Record<string, number>;
+        processedIncomes.forEach((income: any) => {
+          const amount = isNaN(income.amount) ? 0 : income.amount;
+          if (incomeCategories[income.category]) {
+            incomeCategories[income.category] += amount;
+          } else {
+            incomeCategories[income.category] = amount;
+          }
+        });
+        
+        const incomeCategoriesArray = Object.keys(incomeCategories).map(category => {
+          const amount = incomeCategories[category];
+          const percentage = totalIncome > 0 ? (amount / totalIncome) * 100 : 0;
+          return {
+            name: category,
+            amount,
+            percentage: parseFloat(percentage.toFixed(1)),
+          };
+        });
+        
+        // Sort by amount (highest first)
+        incomeCategoriesArray.sort((a, b) => b.amount - a.amount);
+        
+        console.log('Income categories:', incomeCategoriesArray);
+        console.log('Setting income data with total:', totalIncome);
+        
+        setIncomeData({
+          total: totalIncome,
+          categories: incomeCategoriesArray,
+        });
+      } else {
+        console.log('No income data available');
+        setIncomeData({
+          total: 0,
+          categories: [],
+        });
+      }
       
       // Get expense data
+      console.log('Calling expenseAPI.getExpenses()...');
       const expensesData = await expenseAPI.getExpenses();
-      console.log('支出数据:', expensesData);
+      console.log('Fresh expense data from API:', expensesData);
       
-      // 确保expensesData是数组
-      const safeExpensesData = Array.isArray(expensesData) ? expensesData : [];
-      
-      // Calculate total expenses
-      const totalExpense = safeExpensesData.reduce((sum: number, expense: any) => sum + expense.amount, 0);
-      
-      // Group expenses by category and calculate percentages
-      const expenseCategories = {} as Record<string, number>;
-      safeExpensesData.forEach((expense: any) => {
-        if (expenseCategories[expense.category]) {
-          expenseCategories[expense.category] += expense.amount;
-        } else {
-          expenseCategories[expense.category] = expense.amount;
-        }
-      });
-      
-      const expenseCategoriesArray = Object.keys(expenseCategories).map(category => {
-        const amount = expenseCategories[category];
-        const percentage = totalExpense > 0 ? (amount / totalExpense) * 100 : 0;
-        return {
-          name: category,
-          amount,
-          percentage: parseFloat(percentage.toFixed(1)),
-        };
-      });
-      
-      // Sort by amount (highest first)
-      expenseCategoriesArray.sort((a, b) => b.amount - a.amount);
-      
-      setExpenseData({
-        total: totalExpense,
-        categories: expenseCategoriesArray,
-      });
+      if (Array.isArray(expensesData) && expensesData.length > 0) {
+        // Process expense data
+        const processedExpenses = expensesData.map((expense: any) => ({
+          ...expense,
+          amount: typeof expense.amount === 'string' ? parseFloat(expense.amount) : Number(expense.amount)
+        }));
+        
+        // Calculate total
+        const totalExpense = processedExpenses.reduce((sum: number, expense: any) => {
+          return sum + (isNaN(expense.amount) ? 0 : expense.amount);
+        }, 0);
+        
+        console.log('Processed total expense:', totalExpense);
+        
+        // Group by category
+        const expenseCategories = {} as Record<string, number>;
+        processedExpenses.forEach((expense: any) => {
+          const amount = isNaN(expense.amount) ? 0 : expense.amount;
+          if (expenseCategories[expense.category]) {
+            expenseCategories[expense.category] += amount;
+          } else {
+            expenseCategories[expense.category] = amount;
+          }
+        });
+        
+        const expenseCategoriesArray = Object.keys(expenseCategories).map(category => {
+          const amount = expenseCategories[category];
+          const percentage = totalExpense > 0 ? (amount / totalExpense) * 100 : 0;
+          return {
+            name: category,
+            amount,
+            percentage: parseFloat(percentage.toFixed(1)),
+          };
+        });
+        
+        // Sort by amount
+        expenseCategoriesArray.sort((a, b) => b.amount - a.amount);
+        
+        // Update state
+        setExpenseData({
+          total: totalExpense,
+          categories: expenseCategoriesArray,
+        });
+        
+        console.log('Expense data updated with total:', totalExpense);
+      } else {
+        console.log('No expense data available from API');
+        setExpenseData({
+          total: 0,
+          categories: [],
+        });
+      }
       
     } catch (error) {
       console.error('Failed to fetch statistics data:', error);
       setError('Failed to fetch statistics data. Please try again later.');
-    } finally {
-      setIsLoading(false);
-      setIsRefreshing(false);
     }
   };
 
-  // 使用useFocusEffect代替useEffect，在每次页面聚焦时刷新数据
+  // Use useFocusEffect instead of useEffect to refresh data each time the page is focused
   useFocusEffect(
     React.useCallback(() => {
-      console.log('统计页面获得焦点，刷新数据...');
-      fetchData();
-      return () => {
-        // 页面失去焦点时的清理工作（如果需要）
+      console.log('Statistics page gained focus, refreshing data...');
+      console.log('Current income data before refresh:', incomeData);
+      
+      const refreshData = async () => {
+        try {
+          setIsLoading(true);
+          
+          // Force a fresh data fetch directly from API
+          console.log('Forcing fresh data fetch from API...');
+          
+          // Get income data directly
+          const incomesData = await incomeAPI.getIncomes();
+          console.log('Fresh income data from API:', incomesData);
+          
+          if (Array.isArray(incomesData) && incomesData.length > 0) {
+            // Process income data
+            const processedIncomes = incomesData.map((income: any) => ({
+              ...income,
+              amount: typeof income.amount === 'string' ? parseFloat(income.amount) : Number(income.amount)
+            }));
+            
+            // Calculate total
+            const totalIncome = processedIncomes.reduce((sum: number, income: any) => {
+              return sum + (isNaN(income.amount) ? 0 : income.amount);
+            }, 0);
+            
+            console.log('Processed total income:', totalIncome);
+            
+            // Group by category
+            const incomeCategories = {} as Record<string, number>;
+            processedIncomes.forEach((income: any) => {
+              const amount = isNaN(income.amount) ? 0 : income.amount;
+              if (incomeCategories[income.category]) {
+                incomeCategories[income.category] += amount;
+              } else {
+                incomeCategories[income.category] = amount;
+              }
+            });
+            
+            const incomeCategoriesArray = Object.keys(incomeCategories).map(category => {
+              const amount = incomeCategories[category];
+              const percentage = totalIncome > 0 ? (amount / totalIncome) * 100 : 0;
+              return {
+                name: category,
+                amount,
+                percentage: parseFloat(percentage.toFixed(1)),
+              };
+            });
+            
+            // Sort by amount
+            incomeCategoriesArray.sort((a, b) => b.amount - a.amount);
+            
+            // Update state
+            setIncomeData({
+              total: totalIncome,
+              categories: incomeCategoriesArray,
+            });
+            
+            console.log('Income data updated with total:', totalIncome);
+          } else {
+            console.log('No income data available from API');
+            setIncomeData({
+              total: 0,
+              categories: [],
+            });
+          }
+          
+          // Similar process for expenses
+          const expensesData = await expenseAPI.getExpenses();
+          console.log('Fresh expense data from API:', expensesData);
+          
+          if (Array.isArray(expensesData) && expensesData.length > 0) {
+            // Process expense data
+            const processedExpenses = expensesData.map((expense: any) => ({
+              ...expense,
+              amount: typeof expense.amount === 'string' ? parseFloat(expense.amount) : Number(expense.amount)
+            }));
+            
+            // Calculate total
+            const totalExpense = processedExpenses.reduce((sum: number, expense: any) => {
+              return sum + (isNaN(expense.amount) ? 0 : expense.amount);
+            }, 0);
+            
+            console.log('Processed total expense:', totalExpense);
+            
+            // Group by category
+            const expenseCategories = {} as Record<string, number>;
+            processedExpenses.forEach((expense: any) => {
+              const amount = isNaN(expense.amount) ? 0 : expense.amount;
+              if (expenseCategories[expense.category]) {
+                expenseCategories[expense.category] += amount;
+              } else {
+                expenseCategories[expense.category] = amount;
+              }
+            });
+            
+            const expenseCategoriesArray = Object.keys(expenseCategories).map(category => {
+              const amount = expenseCategories[category];
+              const percentage = totalExpense > 0 ? (amount / totalExpense) * 100 : 0;
+              return {
+                name: category,
+                amount,
+                percentage: parseFloat(percentage.toFixed(1)),
+              };
+            });
+            
+            // Sort by amount
+            expenseCategoriesArray.sort((a, b) => b.amount - a.amount);
+            
+            // Update state
+            setExpenseData({
+              total: totalExpense,
+              categories: expenseCategoriesArray,
+            });
+            
+            console.log('Expense data updated with total:', totalExpense);
+          } else {
+            console.log('No expense data available from API');
+            setExpenseData({
+              total: 0,
+              categories: [],
+            });
+          }
+          
+          // Skip calling fetchData again since we've already processed the data
+          // await fetchData();
+        } finally {
+          setIsLoading(false);
+          setIsRefreshing(false);
+          console.log('Statistics data refresh completed');
+          
+          // Debug the state after data is loaded
+          setTimeout(() => {
+            console.log('After refresh - Income data:', incomeData);
+            console.log('After refresh - Total income:', incomeData.total);
+          }, 100); // Small delay to ensure state is updated
+        }
       };
-    }, [])
+      
+      refreshData();
+      
+      return () => {
+        // Cleanup when screen loses focus
+      };
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+    }, []) // Intentionally empty dependency array - we want this to run only on focus
   );
 
   // Pull to refresh
@@ -128,11 +329,20 @@ const StatisticsScreen = () => {
   };
 
   // Format amount
-  const formatAmount = (amount: number) => {
-    if (amount === undefined || amount === null) {
+  const formatAmount = (amount: number | undefined | null) => {
+    // Check for undefined, null, or NaN
+    if (amount === undefined || amount === null || isNaN(amount)) {
+      console.log('Invalid amount detected:', amount);
       return '$0.00';
     }
-    return `$${amount.toFixed(2)}`;
+    try {
+      // Ensure amount is a number
+      const numAmount = Number(amount);
+      return `$${numAmount.toFixed(2)}`;
+    } catch (error) {
+      console.error('Format amount error:', error, 'Amount value:', amount);
+      return '$0.00';
+    }
   };
 
   if (isLoading) {

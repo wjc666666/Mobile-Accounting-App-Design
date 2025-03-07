@@ -21,75 +21,134 @@ const HomeScreen = () => {
   const [budgetAnalysis, setBudgetAnalysis] = useState<any>(null);
   const [error, setError] = useState<string | null>(null);
 
-  // 确保incomes和expenses是数组
+  // Ensure incomes and expenses are arrays
   const safeIncomes = Array.isArray(incomes) ? incomes : [];
   const safeExpenses = Array.isArray(expenses) ? expenses : [];
 
-  // Calculate total income
-  const totalIncome = safeIncomes.reduce((sum, income) => sum + income.amount, 0);
+  // Debug logging for income data
+  console.log('Safe incomes length:', safeIncomes.length);
+  if (safeIncomes.length > 0) {
+    console.log('Sample income items:');
+    safeIncomes.slice(0, 3).forEach((income, index) => {
+      console.log(`Income ${index}:`, income);
+      console.log(`Income ${index} amount:`, income.amount, 'type:', typeof income.amount);
+    });
+  }
+
+  // Calculate total income - ensure we have valid numbers
+  const totalIncome = safeIncomes.reduce((sum, income) => {
+    const amount = income && typeof income.amount === 'number' ? income.amount : 0;
+    console.log('Processing income amount:', income?.amount, '→', amount);
+    return sum + amount;
+  }, 0);
   
-  // Calculate total expenses
-  const totalExpense = safeExpenses.reduce((sum, expense) => sum + expense.amount, 0);
+  console.log('Calculated totalIncome:', totalIncome);
   
-  // Calculate balance
-  const balance = totalIncome - totalExpense;
+  // Calculate total expenses - ensure we have valid numbers
+  const totalExpense = safeExpenses.reduce((sum, expense) => {
+    const amount = expense && typeof expense.amount === 'number' ? expense.amount : 0;
+    return sum + amount;
+  }, 0);
+  
+  // Calculate balance - ensure it's a valid number
+  const balance = isNaN(totalIncome - totalExpense) ? 0 : (totalIncome - totalExpense);
 
   // Fetch data
   const fetchData = async () => {
     try {
       setError(null);
-      console.log('开始获取数据...');
+      console.log('Starting to fetch data...');
       
       // Get income data
-      console.log('获取收入数据...');
+      console.log('Fetching income data...');
       const incomesData = await incomeAPI.getIncomes();
-      console.log('收入数据:', incomesData);
-      setIncomes(Array.isArray(incomesData) ? incomesData : []);
+      console.log('Income data:', incomesData);
+      
+      // Debug income data
+      if (Array.isArray(incomesData)) {
+        console.log('Income data is an array with length:', incomesData.length);
+        if (incomesData.length > 0) {
+          console.log('First income item:', JSON.stringify(incomesData[0]));
+          console.log('First income amount:', incomesData[0].amount);
+          console.log('First income amount type:', typeof incomesData[0].amount);
+          
+          // Convert string amounts to numbers if needed
+          const processedIncomes = incomesData.map(income => ({
+            ...income,
+            amount: typeof income.amount === 'string' ? parseFloat(income.amount) : income.amount
+          }));
+          console.log('Processed incomes:', processedIncomes);
+          setIncomes(processedIncomes);
+        } else {
+          setIncomes([]);
+        }
+      } else {
+        console.log('Income data is not an array:', typeof incomesData);
+        setIncomes([]);
+      }
       
       // Get expense data
-      console.log('获取支出数据...');
+      console.log('Fetching expense data...');
       const expensesData = await expenseAPI.getExpenses();
-      console.log('支出数据:', expensesData);
-      setExpenses(Array.isArray(expensesData) ? expensesData : []);
+      console.log('Expense data:', expensesData);
+      
+      // Process expense data similarly
+      if (Array.isArray(expensesData)) {
+        const processedExpenses = expensesData.map(expense => ({
+          ...expense,
+          amount: typeof expense.amount === 'string' ? parseFloat(expense.amount) : expense.amount
+        }));
+        setExpenses(processedExpenses);
+      } else {
+        setExpenses([]);
+      }
       
       // Get budget analysis
-      console.log('获取预算分析...');
+      console.log('Fetching budget analysis...');
       const budgetData = await budgetAPI.getBudgetAnalysis();
-      console.log('预算分析:', budgetData);
+      console.log('Budget analysis:', budgetData);
       setBudgetAnalysis(budgetData || {});
       
-      console.log('所有数据获取完成');
+      console.log('All data fetched');
     } catch (error: any) {
-      console.error('获取数据失败:', error);
+      console.error('Fetch data failed:', error);
       let errorMessage = 'Failed to fetch data. Please try again later.';
       if (error.response) {
         // 服务器响应了，但状态码不在2xx范围内
         errorMessage = `Server error: ${error.response.status} - ${error.response.data.error || error.response.statusText}`;
-        console.error('错误响应:', error.response.data);
+        console.error('Error response:', error.response.data);
       } else if (error.request) {
         // 请求已发送，但没有收到响应
         errorMessage = 'No response from server. Please check your connection.';
-        console.error('无响应:', error.request);
+        console.error('No response:', error.request);
       } else {
         // 设置请求时发生了错误
         errorMessage = `Error: ${error.message}`;
       }
       setError(errorMessage);
-    } finally {
-      setIsLoading(false);
-      setIsRefreshing(false);
     }
   };
 
-  // Fetch data on component mount and when screen is focused
+  // Use useFocusEffect to refresh data when screen is focused
   useFocusEffect(
     React.useCallback(() => {
-      console.log('主页面获得焦点，刷新数据...');
-      fetchData();
+      console.log('Main page gained focus, refreshing data...');
+      setIsLoading(true);
+      fetchData().finally(() => {
+        setIsLoading(false);
+        setIsRefreshing(false);
+        console.log('Data refresh completed');
+        
+        // Debug the state after data is loaded
+        setTimeout(() => {
+          console.log('After refresh - Income length:', incomes.length);
+          console.log('After refresh - Total income:', totalIncome);
+        }, 100); // Small delay to ensure state is updated
+      });
       return () => {
-        // 页面失去焦点时的清理工作（如果需要）
+        // Cleanup when screen loses focus
       };
-    }, [])
+    }, []) // We intentionally only want this to run when the screen is focused, not on every state change
   );
 
   // Pull to refresh
@@ -104,19 +163,51 @@ const HomeScreen = () => {
   };
 
   // Format amount
-  const formatAmount = (amount: number) => {
-    if (amount === undefined || amount === null) {
+  const formatAmount = (amount: number | undefined | null) => {
+    // Check for undefined, null, or NaN
+    if (amount === undefined || amount === null || isNaN(amount)) {
+      console.log('Invalid amount detected:', amount);
       return '$0.00';
     }
-    return `$${amount.toFixed(2)}`;
+    try {
+      // Ensure amount is a number
+      const numAmount = Number(amount);
+      return `$${numAmount.toFixed(2)}`;
+    } catch (error) {
+      console.error('Format amount error:', error, 'Amount value:', amount);
+      return '$0.00';
+    }
   };
 
   // Get recent transactions
   const getRecentTransactions = () => {
+    // Debug transactions data
+    console.log('Safe incomes length:', safeIncomes.length);
+    console.log('Safe expenses length:', safeExpenses.length);
+    
+    if (safeIncomes.length > 0) {
+      console.log('Sample income amount:', safeIncomes[0].amount, 'type:', typeof safeIncomes[0].amount);
+    }
+    
     const allTransactions = [
-      ...safeIncomes.map(income => ({ ...income, type: 'income' })),
-      ...safeExpenses.map(expense => ({ ...expense, type: 'expense' }))
+      ...safeIncomes.map(income => ({ 
+        ...income, 
+        type: 'income',
+        // Ensure amount is a number
+        amount: typeof income.amount === 'string' ? parseFloat(income.amount) : income.amount
+      })),
+      ...safeExpenses.map(expense => ({ 
+        ...expense, 
+        type: 'expense',
+        // Ensure amount is a number
+        amount: typeof expense.amount === 'string' ? parseFloat(expense.amount) : expense.amount
+      }))
     ];
+    
+    console.log('All transactions length:', allTransactions.length);
+    if (allTransactions.length > 0) {
+      console.log('First transaction:', allTransactions[0]);
+    }
     
     // Sort by date, newest first
     return allTransactions

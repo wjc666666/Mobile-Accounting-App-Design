@@ -1,63 +1,73 @@
 import axios from 'axios';
-// 暂时注释掉 AsyncStorage
+// Temporarily comment out AsyncStorage
 // import AsyncStorage from '@react-native-async-storage/async-storage';
 
-// 内存中存储令牌
+// Store token in memory
 let memoryToken: string | null = null;
 
-// 后端API基础URL
-// 在Android模拟器中访问本地主机需要使用10.0.2.2
-// 在真机上测试时需要使用实际的IP地址
+// Backend API base URL
+// To access localhost from Android emulator, use 10.0.2.2
+// For real device testing, use the actual IP address
 const API_BASE_URL = 'http://10.0.2.2:5000';
-console.log('API基础URL:', API_BASE_URL);
+console.log('API base URL:', API_BASE_URL);
 
-// 创建axios实例
+// Create axios instance
 const api = axios.create({
   baseURL: API_BASE_URL,
   headers: {
     'Content-Type': 'application/json',
   },
-  // 添加超时设置
+  // Add timeout setting
   timeout: 10000,
 });
 
-// 添加请求拦截器，用于调试
+// Add request interceptor for debugging
 api.interceptors.request.use(
   (config) => {
-    console.log('发送请求:', config.method, config.url, config.data);
+    console.log('Sending request:', config.method, config.url, config.data);
     return config;
   },
   (error) => {
-    console.error('请求错误:', error);
+    console.error('Request error:', error);
     return Promise.reject(error);
   }
 );
 
-// 添加响应拦截器，用于调试
+// Add response interceptor for debugging
 api.interceptors.response.use(
   (response) => {
     console.log('API Response:', response.config.url, response.status);
+    // Log detailed response data for debugging
+    console.log('Response data type:', typeof response.data);
+    console.log('Is response data array?', Array.isArray(response.data));
+    if (Array.isArray(response.data) && response.data.length > 0) {
+      console.log('First item in response:', JSON.stringify(response.data[0]));
+      if (response.data[0].amount) {
+        console.log('First item amount:', response.data[0].amount);
+        console.log('First item amount type:', typeof response.data[0].amount);
+      }
+    }
     return response;
   },
   (error) => {
     if (error.response) {
-      // 服务器响应了，但状态码不在2xx范围内
+      // Server responded with a status code outside of 2xx range
       console.error('API Error:', error.config?.url, error.response.status, error.response.data);
     } else if (error.request) {
-      // 请求已发送，但没有收到响应
+      // Request was made but no response received
       console.error('API No Response:', error.config?.url, error.request);
     } else {
-      // 设置请求时发生了错误
+      // Error setting up the request
       console.error('API Request Error:', error.message);
     }
     return Promise.reject(error);
   }
 );
 
-// 请求拦截器 - 添加认证令牌
+// Request interceptor - add authentication token
 api.interceptors.request.use(
   async (config) => {
-    // 使用内存中的令牌代替 AsyncStorage
+    // Use token from memory instead of AsyncStorage
     const token = memoryToken;
     if (token) {
       config.headers.Authorization = `Bearer ${token}`;
@@ -69,61 +79,61 @@ api.interceptors.request.use(
   }
 );
 
-// 用户API
+// User API
 export const userAPI = {
-  // 用户注册
+  // User registration
   register: async (userData: { username: string; email: string; password: string }) => {
     try {
       const response = await api.post('/users/register', userData);
       return response.data;
     } catch (error) {
-      console.error('注册失败:', error);
+      console.error('Registration failed:', error);
       throw error;
     }
   },
 
-  // 用户登录
+  // User login
   login: async (credentials: { email: string; password: string }) => {
     try {
       const response = await api.post('/users/login', credentials);
-      // 保存令牌到内存
+      // Save token to memory
       if (response.data.token) {
         memoryToken = response.data.token;
       }
       return response.data;
     } catch (error) {
-      console.error('登录失败:', error);
+      console.error('Login failed:', error);
       throw error;
     }
   },
 
-  // 获取用户信息
+  // Get user profile
   getProfile: async () => {
     try {
       const response = await api.get('/users/profile');
       return response.data;
     } catch (error) {
-      console.error('获取用户信息失败:', error);
+      console.error('Failed to get user profile:', error);
       throw error;
     }
   },
 
-  // 登出
+  // Logout
   logout: async () => {
     try {
-      // 清除内存中的令牌
+      // Clear token from memory
       memoryToken = null;
       return { success: true };
     } catch (error) {
-      console.error('登出失败:', error);
+      console.error('Logout failed:', error);
       throw error;
     }
   },
 };
 
-// 收入API
+// Income API
 export const incomeAPI = {
-  // 添加收入记录
+  // Add income record
   addIncome: async (incomeData: { 
     amount: number; 
     category: string; 
@@ -131,30 +141,30 @@ export const incomeAPI = {
     description: string;
   }) => {
     try {
-      // 发送所有字段，包括description
+      // Send all fields including description
       const response = await api.post('/income', incomeData);
       return response.data;
     } catch (error) {
-      console.error('添加收入记录失败:', error);
+      console.error('Failed to add income record:', error);
       throw error;
     }
   },
 
-  // 获取收入记录
+  // Get income records
   getIncomes: async () => {
     try {
       const response = await api.get('/income');
       return response.data;
     } catch (error) {
-      console.error('获取收入记录失败:', error);
+      console.error('Failed to get income records:', error);
       throw error;
     }
   },
 };
 
-// 支出API
+// Expense API
 export const expenseAPI = {
-  // 添加支出记录
+  // Add expense record
   addExpense: async (expenseData: { 
     amount: number; 
     category: string; 
@@ -162,36 +172,36 @@ export const expenseAPI = {
     description: string;
   }) => {
     try {
-      // 发送所有字段，包括description
+      // Send all fields including description
       const response = await api.post('/expenses', expenseData);
       return response.data;
     } catch (error) {
-      console.error('添加支出记录失败:', error);
+      console.error('Failed to add expense record:', error);
       throw error;
     }
   },
 
-  // 获取支出记录
+  // Get expense records
   getExpenses: async () => {
     try {
       const response = await api.get('/expenses');
       return response.data;
     } catch (error) {
-      console.error('获取支出记录失败:', error);
+      console.error('Failed to get expense records:', error);
       throw error;
     }
   },
 };
 
-// 预算分析API
+// Budget analysis API
 export const budgetAPI = {
-  // 获取预算分析
+  // Get budget analysis
   getBudgetAnalysis: async () => {
     try {
       const response = await api.get('/budget/analysis');
       return response.data;
     } catch (error) {
-      console.error('获取预算分析失败:', error);
+      console.error('Failed to get budget analysis:', error);
       throw error;
     }
   },
