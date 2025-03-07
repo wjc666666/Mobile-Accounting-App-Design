@@ -1,6 +1,6 @@
 INSERT INTO users (username, email, password_hash) 
 VALUES 
-('testuser', 'test@example.com', 'hashedpassword');
+('testuser', 'test@example.com', '$2b$10$3euPcmQFCiblsZeEu5s7p.9wVsruQQr.K8GQSbpZMfLWokN/C9Pnm');
 
 INSERT INTO income (user_id, amount, category, date) 
 VALUES 
