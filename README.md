@@ -1,224 +1,198 @@
-<<<<<<< HEAD
-This is a new [**React Native**](https://reactnative.dev) project, bootstrapped using [`@react-native-community/cli`](https://github.com/react-native-community/cli).
+# 移动记账应用
 
-# Getting Started
+一个功能完整的移动记账应用，包括前端和后端实现。
 
-> **Note**: Make sure you have completed the [Set Up Your Environment](https://reactnative.dev/docs/set-up-your-environment) guide before proceeding.
+## 项目结构
 
-## Step 1: Start Metro
-
-First, you will need to run **Metro**, the JavaScript build tool for React Native.
-
-To start the Metro dev server, run the following command from the root of your React Native project:
-
-```sh
-# Using npm
-npm start
-
-# OR using Yarn
-yarn start
+```
+/
+├── frontend/           # React Native 前端
+│   └── JCEco/          # 前端项目目录
+│       ├── src/        # 源代码
+│       │   ├── components/  # 可复用组件
+│       │   ├── screens/     # 屏幕组件
+│       │   ├── navigation/  # 导航配置
+│       │   └── utils/       # 工具函数和API
+│       ├── android/    # Android 配置
+│       └── ios/        # iOS 配置
+└── backend/            # Node.js 后端
+    ├── server.js       # 服务器入口
+    ├── database.sql    # 数据库脚本
+    └── .env            # 环境变量配置
 ```
 
-## Step 2: Build and run your app
+## 技术栈
 
-With Metro running, open a new terminal window/pane from the root of your React Native project, and use one of the following commands to build and run your Android or iOS app:
+### 前端
+- React Native
+- React Navigation
+- React Native Paper
+- Axios
+- AsyncStorage
 
-### Android
+### 后端
+- Node.js
+- Express.js
+- MySQL
+- JWT 认证
+- Bcrypt 密码加密
 
-```sh
-# Using npm
+## 功能特性
+
+- 用户认证（注册、登录、登出）
+- 收入记录管理
+- 支出记录管理
+- 财务概览和统计
+- 预算分析
+
+## 安装和运行
+
+### 前提条件
+- Node.js (v14+)
+- npm 或 yarn
+- MySQL 数据库
+- Android Studio (用于Android开发)
+- Xcode (用于iOS开发，仅Mac)
+
+### 后端设置
+
+1. 进入后端目录
+```bash
+cd backend
+```
+
+2. 安装依赖
+```bash
+npm install
+```
+
+3. 创建数据库和表
+```bash
+mysql -u root -p < database.sql
+```
+
+4. 配置环境变量
+创建 `.env` 文件，内容如下：
+```
+DB_HOST=127.0.0.1
+DB_USER=root
+DB_PASSWORD=你的数据库密码
+DB_DATABASE=mobile_accounting_db
+JWT_SECRET=你的密钥
+PORT=5000
+```
+
+5. 启动服务器
+```bash
+node server.js
+```
+
+### 前端设置
+
+1. 进入前端目录
+```bash
+cd frontend/JCEco
+```
+
+2. 安装依赖
+```bash
+npm install
+```
+
+3. 启动Metro服务器
+```bash
+npm start
+```
+
+4. 在新的终端中运行应用
+```bash
+# 对于Android
 npm run android
 
-# OR using Yarn
-yarn android
-```
-
-### iOS
-
-For iOS, remember to install CocoaPods dependencies (this only needs to be run on first clone or after updating native deps).
-
-The first time you create a new project, run the Ruby bundler to install CocoaPods itself:
-
-```sh
-bundle install
-```
-
-Then, and every time you update your native dependencies, run:
-
-```sh
-bundle exec pod install
-```
-
-For more information, please visit [CocoaPods Getting Started guide](https://guides.cocoapods.org/using/getting-started.html).
-
-```sh
-# Using npm
+# 对于iOS
 npm run ios
-
-# OR using Yarn
-yarn ios
 ```
 
-If everything is set up correctly, you should see your new app running in the Android Emulator, iOS Simulator, or your connected device.
+## API文档
 
-This is one way to run your app — you can also build it directly from Android Studio or Xcode.
+### 用户认证
 
-## Step 3: Modify your app
+#### 注册
+- **URL**: `/users/register`
+- **方法**: `POST`
+- **请求体**:
+  ```json
+  {
+    "username": "用户名",
+    "email": "邮箱",
+    "password": "密码"
+  }
+  ```
 
-Now that you have successfully run the app, let's make changes!
+#### 登录
+- **URL**: `/users/login`
+- **方法**: `POST`
+- **请求体**:
+  ```json
+  {
+    "email": "邮箱",
+    "password": "密码"
+  }
+  ```
 
-Open `App.tsx` in your text editor of choice and make some changes. When you save, your app will automatically update and reflect these changes — this is powered by [Fast Refresh](https://reactnative.dev/docs/fast-refresh).
+### 收入管理
 
-When you want to forcefully reload, for example to reset the state of your app, you can perform a full reload:
+#### 添加收入
+- **URL**: `/income`
+- **方法**: `POST`
+- **认证**: 需要JWT令牌
+- **请求体**:
+  ```json
+  {
+    "amount": 1000,
+    "category": "Salary",
+    "date": "2023-03-01",
+    "description": "月薪"
+  }
+  ```
 
-- **Android**: Press the <kbd>R</kbd> key twice or select **"Reload"** from the **Dev Menu**, accessed via <kbd>Ctrl</kbd> + <kbd>M</kbd> (Windows/Linux) or <kbd>Cmd ⌘</kbd> + <kbd>M</kbd> (macOS).
-- **iOS**: Press <kbd>R</kbd> in iOS Simulator.
+#### 获取收入记录
+- **URL**: `/income`
+- **方法**: `GET`
+- **认证**: 需要JWT令牌
 
-## Congratulations! :tada:
+### 支出管理
 
-You've successfully run and modified your React Native App. :partying_face:
+#### 添加支出
+- **URL**: `/expenses`
+- **方法**: `POST`
+- **认证**: 需要JWT令牌
+- **请求体**:
+  ```json
+  {
+    "amount": 100,
+    "category": "Food",
+    "date": "2023-03-05",
+    "description": "晚餐"
+  }
+  ```
 
-### Now what?
+#### 获取支出记录
+- **URL**: `/expenses`
+- **方法**: `GET`
+- **认证**: 需要JWT令牌
 
-- If you want to add this new React Native code to an existing application, check out the [Integration guide](https://reactnative.dev/docs/integration-with-existing-apps).
-- If you're curious to learn more about React Native, check out the [docs](https://reactnative.dev/docs/getting-started).
+### 预算分析
 
-# Troubleshooting
+#### 获取预算分析
+- **URL**: `/budget/analysis`
+- **方法**: `GET`
+- **认证**: 需要JWT令牌
 
-If you're having issues getting the above steps to work, see the [Troubleshooting](https://reactnative.dev/docs/troubleshooting) page.
+## 贡献
 
-# Learn More
+欢迎提交问题和拉取请求。
 
-To learn more about React Native, take a look at the following resources:
+## 许可证
 
-- [React Native Website](https://reactnative.dev) - learn more about React Native.
-- [Getting Started](https://reactnative.dev/docs/environment-setup) - an **overview** of React Native and how setup your environment.
-- [Learn the Basics](https://reactnative.dev/docs/getting-started) - a **guided tour** of the React Native **basics**.
-- [Blog](https://reactnative.dev/blog) - read the latest official React Native **Blog** posts.
-- [`@facebook/react-native`](https://github.com/facebook/react-native) - the Open Source; GitHub **repository** for React Native.
-=======
-+ Mobile Accounting App Design
-
-+ Project Overview
-
-This mobile app empowers users to manage their finances effectively by tracking income and expenses while offering actionable financial advice. With features like financial health analysis, budget optimization, and dynamic chart visualizations, the app aims to simplify personal financial management and help users make informed decisions.
-
-+ Features
-
-+ Core Features
-
-+ 1. Income Management
-
-Manually input diverse income streams such as salaries, investments, and rental income.
-
-View income breakdowns and proportions using interactive pie charts.
-
-+ 2. Expense Management
-
-Import bank statements or payment records and automatically categorize expenses into predefined groups (e.g., food, transportation, entertainment).
-
-Highlight the largest spending areas for better cost control.
-
-+ 3. Budget Analysis
-
-Automatically calculate monthly savings or debts.
-
-Provide recommendations to optimize spending ratios, ensuring a balanced budget.
-
-+ 4. Chart Visualization
-
-Generate pie and bar charts to visually represent income sources and expense distribution.
-
-Compare financial trends over time for better decision-making.
-
-+ 5. Financial Health Advice
-
-Analyze user spending patterns to identify areas for improvement.
-
-Offer personalized advice to improve overall financial stability and savings.
-
-+ Future Features
-
-+ 1. API Integration
-
-Enable automatic import of transaction data from popular banks and payment platforms such as PayPal, Alipay, and WeChat Pay.
-
-+ 2. Personalized Advice
-
-Utilize AI to deliver tailored financial advice based on spending habits and income trends.
-
-+ 3. Multi-Device Sync
-
-Support synchronization across multiple devices, ensuring seamless data access and management.
-
-+ 4. Advanced Analytics
-
-Incorporate predictive analysis for long-term financial planning and goal tracking.
-
-+ 5. Financial Health Advice
-
-+ Analyze user spending patterns to identify areas for improvement.
-
-+ Offer personalized recommendations to enhance financial stability and savings.
-
-+ Tech Stack
-
-+ Frontend
-
-React Native: For cross-platform development (future iOS support).
-
-Kotlin: Primary language for Android app development.
-
-+ Backend
-
-Node.js: Backend framework for handling API requests.
-
-MySQL: Relational database for structured data storage.
-
-Firebase/AWS: Cloud services for real-time data synchronization and backend hosting.
-
-+ Charting and Visualization
-
-MPAndroidChart: Generate interactive and visually appealing charts for financial insights.
-
-+ Security
-
-AES Encryption: Secure sensitive user data, including income and expense records.
-
-Two-Factor Authentication (2FA): Add an extra layer of security for user accounts.
-
-+ API Integration
-
-Use bank and payment platform APIs (e.g., Plaid, Alipay, WeChat Pay) for importing transaction data seamlessly.
-
-### + System Architecture Diagram
-
-<pre>
-+-------------------+
-|                   |
-|  User Interface (UI)  |
-|                   |
-+---------+---------+
-          |
-          v
-+---------+---------+
-|                   |
-| Business Logic Layer (BLL)  |
-|                   |
-+---------+---------+
-          |
-          v
-+---------+---------+
-|                   |
-| Data Access Layer (DAL)  |
-|                   |
-+---------+---------+
-          |
-          v
-+---------+---------+
-|                   |
-|    Database (DB)   |
-|                   |
-+-------------------+
-</pre>
->>>>>>> 1dca95d09560b792d355384086046b9778f0f687
+MIT
