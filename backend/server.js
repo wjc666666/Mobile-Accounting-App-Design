@@ -193,9 +193,16 @@ app.post("/income", verifyToken, (req, res) => {
 app.get("/income", verifyToken, (req, res) => {
     const sql = "SELECT * FROM income WHERE user_id = ? ORDER BY date DESC";
     query(sql, [req.userId])
-        .then(([results]) => {
-            console.log(`✅ Retrieved ${results.length} income records for user:`, req.userId);
-            res.json(results);
+        .then((results) => {
+            // 确保results是一个数组
+            const incomeRecords = Array.isArray(results) ? results[0] : [];
+            if (incomeRecords) {
+                console.log(`✅ Retrieved ${incomeRecords.length} income records for user:`, req.userId);
+                res.json(incomeRecords);
+            } else {
+                console.log(`✅ No income records found for user:`, req.userId);
+                res.json([]);
+            }
         })
         .catch((err) => {
             console.error("❌ Failed to get income records:", err.message);
@@ -230,9 +237,16 @@ app.post("/expenses", verifyToken, (req, res) => {
 app.get("/expenses", verifyToken, (req, res) => {
     const sql = "SELECT * FROM expenses WHERE user_id = ? ORDER BY date DESC";
     query(sql, [req.userId])
-        .then(([results]) => {
-            console.log(`✅ Retrieved ${results.length} expense records for user:`, req.userId);
-            res.json(results);
+        .then((results) => {
+            // 确保results是一个数组
+            const expenseRecords = Array.isArray(results) ? results[0] : [];
+            if (expenseRecords) {
+                console.log(`✅ Retrieved ${expenseRecords.length} expense records for user:`, req.userId);
+                res.json(expenseRecords);
+            } else {
+                console.log(`✅ No expense records found for user:`, req.userId);
+                res.json([]);
+            }
         })
         .catch((err) => {
             console.error("❌ Failed to get expense records:", err.message);
@@ -256,17 +270,24 @@ app.get("/budget/analysis", verifyToken, (req, res) => {
     
     // 执行收入查询
     query(incomeQuery, [req.userId, firstDay, lastDay])
-        .then(([incomeResults]) => {
-            const totalIncome = incomeResults[0].total_income || 0;
+        .then((incomeResults) => {
+            // 确保incomeResults是一个数组
+            const incomeData = Array.isArray(incomeResults) ? incomeResults[0] : [];
+            const totalIncome = incomeData && incomeData[0] && incomeData[0].total_income ? incomeData[0].total_income : 0;
             
             // 执行支出查询
             query(expenseQuery, [req.userId, firstDay, lastDay])
-                .then(([expenseResults]) => {
-                    const totalExpense = expenseResults[0].total_expense || 0;
+                .then((expenseResults) => {
+                    // 确保expenseResults是一个数组
+                    const expenseData = Array.isArray(expenseResults) ? expenseResults[0] : [];
+                    const totalExpense = expenseData && expenseData[0] && expenseData[0].total_expense ? expenseData[0].total_expense : 0;
                     
                     // 执行类别查询
                     query(categoryQuery, [req.userId, firstDay, lastDay])
-                        .then(([categoryResults]) => {
+                        .then((categoryResults) => {
+                            // 确保categoryResults是一个数组
+                            const categoryData = Array.isArray(categoryResults) ? categoryResults[0] : [];
+                            
                             // 计算余额和节省率
                             const balance = totalIncome - totalExpense;
                             const savingRate = totalIncome > 0 ? (balance / totalIncome) * 100 : 0;
@@ -283,7 +304,7 @@ app.get("/budget/analysis", verifyToken, (req, res) => {
                                     balance,
                                     savingRate: parseFloat(savingRate.toFixed(2))
                                 },
-                                categories: categoryResults
+                                categories: categoryData || []
                             };
                             
                             console.log("✅ Budget analysis generated for user:", req.userId);
