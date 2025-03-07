@@ -5,15 +5,9 @@
   </component>
   <component name="ChangeListManager">
     <list default="true" id="1ce5e6ef-4d0e-485e-922c-9353ad075b9a" name="Changes" comment="">
-      <change beforePath="$PROJECT_DIR$/.idea/.gitignore" beforeDir="false" />
       <change beforePath="$PROJECT_DIR$/.idea/caches/deviceStreaming.xml" beforeDir="false" afterPath="$PROJECT_DIR$/.idea/caches/deviceStreaming.xml" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/.idea/vcs.xml" beforeDir="false" afterPath="$PROJECT_DIR$/.idea/vcs.xml" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/backend/server.js" beforeDir="false" afterPath="$PROJECT_DIR$/backend/server.js" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/frontend/JCEco/App.tsx" beforeDir="false" afterPath="$PROJECT_DIR$/frontend/JCEco/App.tsx" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/frontend/JCEco/metro.config.js" beforeDir="false" afterPath="$PROJECT_DIR$/frontend/JCEco/metro.config.js" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/frontend/JCEco/package-lock.json" beforeDir="false" afterPath="$PROJECT_DIR$/frontend/JCEco/package-lock.json" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/frontend/JCEco/package.json" beforeDir="false" afterPath="$PROJECT_DIR$/frontend/JCEco/package.json" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/query" beforeDir="false" />
+      <change beforePath="$PROJECT_DIR$/.idea/misc.xml" beforeDir="false" afterPath="$PROJECT_DIR$/.idea/misc.xml" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/.idea/workspace.xml" beforeDir="false" afterPath="$PROJECT_DIR$/.idea/workspace.xml" afterDir="false" />
     </list>
     <option name="SHOW_DIALOG" value="false" />
     <option name="HIGHLIGHT_CONFLICTS" value="true" />
@@ -44,6 +38,7 @@
     "cidr.known.project.marker": "true",
     "git-widget-placeholder": "main",
     "kotlin-language-version-configured": "true",
+    "last_opened_file_path": "C:/Users/21010/Desktop/JCEco",
     "settings.editor.selected.configurable": "project.propVCSSupport.DirectoryMappings"
   }
 }]]></component>

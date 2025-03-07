@@ -1,100 +1,82 @@
-+ Mobile Accounting App Design
+# Mobile Accounting App Design
 
-+ Project Overview
+## Project Overview
 
 This mobile app empowers users to manage their finances effectively by tracking income and expenses while offering actionable financial advice. With features like financial health analysis, budget optimization, and dynamic chart visualizations, the app aims to simplify personal financial management and help users make informed decisions.
 
-+ Features
+## Features
 
-+ Core Features
+### Core Features
 
-+ 1. Income Management
+#### 1. Income Management
 
-Manually input diverse income streams such as salaries, investments, and rental income.
+- Manually input diverse income streams such as salaries, investments, and rental income.
+- View income breakdowns and proportions using interactive pie charts.
 
-View income breakdowns and proportions using interactive pie charts.
+#### 2. Expense Management
 
-+ 2. Expense Management
+- Import bank statements or payment records and automatically categorize expenses into predefined groups (e.g., food, transportation, entertainment).
+- Highlight the largest spending areas for better cost control.
 
-Import bank statements or payment records and automatically categorize expenses into predefined groups (e.g., food, transportation, entertainment).
+#### 3. Budget Analysis
 
-Highlight the largest spending areas for better cost control.
+- Automatically calculate monthly savings or debts.
+- Provide recommendations to optimize spending ratios, ensuring a balanced budget.
 
-+ 3. Budget Analysis
+#### 4. Chart Visualization
 
-Automatically calculate monthly savings or debts.
+- Generate pie and bar charts to visually represent income sources and expense distribution.
+- Compare financial trends over time for better decision-making.
 
-Provide recommendations to optimize spending ratios, ensuring a balanced budget.
+#### 5. Financial Health Advice
 
-+ 4. Chart Visualization
+- Analyze user spending patterns to identify areas for improvement.
+- Offer personalized advice to improve overall financial stability and savings.
 
-Generate pie and bar charts to visually represent income sources and expense distribution.
+### Future Features
 
-Compare financial trends over time for better decision-making.
+#### 1. API Integration
 
-+ 5. Financial Health Advice
+- Enable automatic import of transaction data from popular banks and payment platforms such as PayPal, Alipay, and WeChat Pay.
 
-Analyze user spending patterns to identify areas for improvement.
+#### 2. Personalized Advice
 
-Offer personalized advice to improve overall financial stability and savings.
+- Utilize AI to deliver tailored financial advice based on spending habits and income trends.
 
-+ Future Features
+#### 3. Multi-Device Sync
 
-+ 1. API Integration
+- Support synchronization across multiple devices, ensuring seamless data access and management.
 
-Enable automatic import of transaction data from popular banks and payment platforms such as PayPal, Alipay, and WeChat Pay.
+#### 4. Advanced Analytics
 
-+ 2. Personalized Advice
+- Incorporate predictive analysis for long-term financial planning and goal tracking.
 
-Utilize AI to deliver tailored financial advice based on spending habits and income trends.
+## Tech Stack
 
-+ 3. Multi-Device Sync
+### Frontend
 
-Support synchronization across multiple devices, ensuring seamless data access and management.
+- React Native: For cross-platform development (future iOS support).
+- React Navigation: For app navigation.
+- React Native Paper: UI component library.
 
-+ 4. Advanced Analytics
+### Backend
 
-Incorporate predictive analysis for long-term financial planning and goal tracking.
+- Node.js: Backend framework for handling API requests.
+- Express.js: Web application framework for Node.js.
+- MySQL: Relational database for structured data storage.
 
-+ 5. Financial Health Advice
+### Charting and Visualization
 
-+ Analyze user spending patterns to identify areas for improvement.
+- React Native Chart Kit: Generate interactive and visually appealing charts for financial insights.
 
-+ Offer personalized recommendations to enhance financial stability and savings.
+### Security
 
-+ Tech Stack
+- AES Encryption: Secure sensitive user data, including income and expense records.
+- JWT Authentication: Secure user authentication.
 
-+ Frontend
+## System Architecture Diagram
 
-React Native: For cross-platform development (future iOS support).
-
-Kotlin: Primary language for Android app development.
-
-+ Backend
-
-Node.js: Backend framework for handling API requests.
-
-MySQL: Relational database for structured data storage.
-
-Firebase/AWS: Cloud services for real-time data synchronization and backend hosting.
-
-+ Charting and Visualization
-
-MPAndroidChart: Generate interactive and visually appealing charts for financial insights.
-
-+ Security
-
-AES Encryption: Secure sensitive user data, including income and expense records.
-
-Two-Factor Authentication (2FA): Add an extra layer of security for user accounts.
-
-+ API Integration
-
-Use bank and payment platform APIs (e.g., Plaid, Alipay, WeChat Pay) for importing transaction data seamlessly.
-
-### + System Architecture Diagram
-
-<pre>
+```
 +-------------------+
 |                   |
 |  User Interface (UI)  |
@@ -121,4 +103,16 @@ Use bank and payment platform APIs (e.g., Plaid, Alipay, WeChat Pay) for importi
 |    Database (DB)   |
 |                   |
 +-------------------+
-</pre>
+```
+
+## Implementation Details
+
+This project is implemented using React Native for the frontend. The application includes:
+
+- Home screen with financial overview
+- Income tracking screen
+- Expense tracking screen
+- Statistics and visualization screen
+- Settings screen
+
+The navigation is handled using React Navigation with a bottom tab navigator for the main screens.
