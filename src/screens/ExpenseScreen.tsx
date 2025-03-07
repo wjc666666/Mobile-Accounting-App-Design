@@ -1,15 +1,17 @@
 import React, { useState } from 'react';
-import { View, Text, StyleSheet, TextInput, TouchableOpacity, ScrollView, Alert } from 'react-native';
+import { View, Text, StyleSheet, TextInput, TouchableOpacity, ScrollView, Alert, ActivityIndicator } from 'react-native';
+import { expenseAPI } from '../utils/api';
 
 const ExpenseScreen = () => {
   const [amount, setAmount] = useState('');
   const [description, setDescription] = useState('');
   const [category, setCategory] = useState('Food');
   const [date, setDate] = useState(new Date().toISOString().split('T')[0]);
+  const [isLoading, setIsLoading] = useState(false);
 
   const categories = ['Food', 'Transport', 'Housing', 'Entertainment', 'Shopping', 'Utilities', 'Other'];
 
-  const handleAddExpense = () => {
+  const handleAddExpense = async () => {
     if (!amount || isNaN(Number(amount))) {
       Alert.alert('Error', 'Please enter a valid amount');
       return;
@@ -20,14 +22,29 @@ const ExpenseScreen = () => {
       return;
     }
 
-    // Logic to save expense record should be added here
-    Alert.alert('Success', 'Expense record added');
-    
-    // Reset form
-    setAmount('');
-    setDescription('');
-    setCategory('Food');
-    setDate(new Date().toISOString().split('T')[0]);
+    setIsLoading(true);
+    try {
+      // Call API to add expense record
+      await expenseAPI.addExpense({
+        amount: Number(amount),
+        category,
+        date,
+        description
+      });
+      
+      Alert.alert('Success', 'Expense record added');
+      
+      // Reset form
+      setAmount('');
+      setDescription('');
+      setCategory('Food');
+      setDate(new Date().toISOString().split('T')[0]);
+    } catch (error) {
+      console.error('Failed to add expense record:', error);
+      Alert.alert('Error', 'Failed to add expense record. Please try again');
+    } finally {
+      setIsLoading(false);
+    }
   };
 
   return (
@@ -93,8 +110,16 @@ const ExpenseScreen = () => {
           />
         </View>
 
-        <TouchableOpacity style={styles.addButton} onPress={handleAddExpense}>
-          <Text style={styles.addButtonText}>Add Expense</Text>
+        <TouchableOpacity 
+          style={[styles.addButton, isLoading && styles.addButtonDisabled]} 
+          onPress={handleAddExpense}
+          disabled={isLoading}
+        >
+          {isLoading ? (
+            <ActivityIndicator color="white" size="small" />
+          ) : (
+            <Text style={styles.addButtonText}>Add Expense</Text>
+          )}
         </TouchableOpacity>
       </View>
     </ScrollView>
@@ -169,6 +194,9 @@ const styles = StyleSheet.create({
     borderRadius: 5,
     alignItems: 'center',
     marginTop: 10,
+  },
+  addButtonDisabled: {
+    backgroundColor: '#95a5a6',
   },
   addButtonText: {
     color: 'white',

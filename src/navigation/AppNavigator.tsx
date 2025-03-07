@@ -2,7 +2,7 @@ import React from 'react';
 import { NavigationContainer } from '@react-navigation/native';
 import { createBottomTabNavigator } from '@react-navigation/bottom-tabs';
 import { createStackNavigator } from '@react-navigation/stack';
-import { Text, View, StyleSheet } from 'react-native';
+import { Text, View, StyleSheet, ActivityIndicator } from 'react-native';
 
 // Import screens
 import HomeScreen from '../screens/HomeScreen';
@@ -10,10 +10,16 @@ import IncomeScreen from '../screens/IncomeScreen';
 import ExpenseScreen from '../screens/ExpenseScreen';
 import StatisticsScreen from '../screens/StatisticsScreen';
 import SettingsScreen from '../screens/SettingsScreen';
+import LoginScreen from '../screens/LoginScreen';
+import RegisterScreen from '../screens/RegisterScreen';
+
+// Import auth context
+import { useAuth } from '../utils/AuthContext';
 
 // Create tab and stack navigators
 const Tab = createBottomTabNavigator();
 const Stack = createStackNavigator();
+const AuthStack = createStackNavigator();
 
 // Custom tab bar icon component
 const TabIcon = ({ name, focused }: { name: string; focused: boolean }) => {
@@ -22,6 +28,16 @@ const TabIcon = ({ name, focused }: { name: string; focused: boolean }) => {
     <View style={[styles.iconContainer, focused && styles.iconContainerFocused]}>
       <Text style={[styles.iconText, focused && styles.iconTextFocused]}>{name}</Text>
     </View>
+  );
+};
+
+// 认证导航
+const AuthNavigator = () => {
+  return (
+    <AuthStack.Navigator screenOptions={{ headerShown: false }}>
+      <AuthStack.Screen name="Login" component={LoginScreen} />
+      <AuthStack.Screen name="Register" component={RegisterScreen} />
+    </AuthStack.Navigator>
   );
 };
 
@@ -70,60 +86,77 @@ const SettingsStack = () => {
   );
 };
 
+// 主应用导航（已登录）
+const MainAppNavigator = () => {
+  return (
+    <Tab.Navigator
+      screenOptions={{
+        tabBarActiveTintColor: '#3498db',
+        tabBarInactiveTintColor: '#95a5a6',
+        tabBarStyle: {
+          backgroundColor: 'white',
+          borderTopWidth: 1,
+          borderTopColor: '#f0f0f0',
+          paddingTop: 5,
+          height: 60,
+        },
+        headerShown: false,
+      }}
+    >
+      <Tab.Screen
+        name="Home"
+        component={HomeStack}
+        options={{
+          tabBarIcon: ({ focused }) => <TabIcon name="Home" focused={focused} />,
+        }}
+      />
+      <Tab.Screen
+        name="Income"
+        component={IncomeStack}
+        options={{
+          tabBarIcon: ({ focused }) => <TabIcon name="Income" focused={focused} />,
+        }}
+      />
+      <Tab.Screen
+        name="Expense"
+        component={ExpenseStack}
+        options={{
+          tabBarIcon: ({ focused }) => <TabIcon name="Expense" focused={focused} />,
+        }}
+      />
+      <Tab.Screen
+        name="Statistics"
+        component={StatisticsStack}
+        options={{
+          tabBarIcon: ({ focused }) => <TabIcon name="Stats" focused={focused} />,
+        }}
+      />
+      <Tab.Screen
+        name="Settings"
+        component={SettingsStack}
+        options={{
+          tabBarIcon: ({ focused }) => <TabIcon name="Settings" focused={focused} />,
+        }}
+      />
+    </Tab.Navigator>
+  );
+};
+
 // Main app navigator
 const AppNavigator = () => {
+  const { isLoading, isLoggedIn } = useAuth();
+
+  if (isLoading) {
+    return (
+      <View style={styles.loadingContainer}>
+        <ActivityIndicator size="large" color="#3498db" />
+      </View>
+    );
+  }
+
   return (
     <NavigationContainer>
-      <Tab.Navigator
-        screenOptions={{
-          tabBarActiveTintColor: '#3498db',
-          tabBarInactiveTintColor: '#95a5a6',
-          tabBarStyle: {
-            backgroundColor: 'white',
-            borderTopWidth: 1,
-            borderTopColor: '#f0f0f0',
-            paddingTop: 5,
-            height: 60,
-          },
-          headerShown: false,
-        }}
-      >
-        <Tab.Screen
-          name="Home"
-          component={HomeStack}
-          options={{
-            tabBarIcon: ({ focused }) => <TabIcon name="Home" focused={focused} />,
-          }}
-        />
-        <Tab.Screen
-          name="Income"
-          component={IncomeStack}
-          options={{
-            tabBarIcon: ({ focused }) => <TabIcon name="Income" focused={focused} />,
-          }}
-        />
-        <Tab.Screen
-          name="Expense"
-          component={ExpenseStack}
-          options={{
-            tabBarIcon: ({ focused }) => <TabIcon name="Expense" focused={focused} />,
-          }}
-        />
-        <Tab.Screen
-          name="Statistics"
-          component={StatisticsStack}
-          options={{
-            tabBarIcon: ({ focused }) => <TabIcon name="Stats" focused={focused} />,
-          }}
-        />
-        <Tab.Screen
-          name="Settings"
-          component={SettingsStack}
-          options={{
-            tabBarIcon: ({ focused }) => <TabIcon name="Settings" focused={focused} />,
-          }}
-        />
-      </Tab.Navigator>
+      {isLoggedIn ? <MainAppNavigator /> : <AuthNavigator />}
     </NavigationContainer>
   );
 };
@@ -146,6 +179,25 @@ const styles = StyleSheet.create({
   iconTextFocused: {
     color: '#3498db',
     fontWeight: 'bold',
+  },
+  loadingContainer: {
+    flex: 1,
+    justifyContent: 'center',
+    alignItems: 'center',
+    backgroundColor: '#ffffff',
+  },
+  authContainer: {
+    flex: 1,
+    justifyContent: 'center',
+    alignItems: 'center',
+    padding: 20,
+    backgroundColor: '#ffffff',
+  },
+  authTitle: {
+    fontSize: 24,
+    fontWeight: 'bold',
+    marginBottom: 20,
+    color: '#3498db',
   },
 });
 

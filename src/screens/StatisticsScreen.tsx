@@ -1,102 +1,236 @@
-import React from 'react';
-import { View, Text, StyleSheet, ScrollView, Dimensions } from 'react-native';
+import React, { useState, useEffect } from 'react';
+import { View, Text, StyleSheet, ScrollView, ActivityIndicator, RefreshControl } from 'react-native';
+import { incomeAPI, expenseAPI } from '../utils/api';
 
 const StatisticsScreen = () => {
-  // Mock data for demonstration
-  const incomeData = {
-    total: 2500,
-    categories: [
-      { name: 'Salary', amount: 2000, percentage: 80 },
-      { name: 'Freelance', amount: 300, percentage: 12 },
-      { name: 'Investment', amount: 200, percentage: 8 },
-    ],
-  };
-
-  const expenseData = {
-    total: 1800,
-    categories: [
-      { name: 'Housing', amount: 800, percentage: 44.4 },
-      { name: 'Food', amount: 400, percentage: 22.2 },
-      { name: 'Transport', amount: 200, percentage: 11.1 },
-      { name: 'Entertainment', amount: 150, percentage: 8.3 },
-      { name: 'Utilities', amount: 150, percentage: 8.3 },
-      { name: 'Other', amount: 100, percentage: 5.7 },
-    ],
-  };
+  const [isLoading, setIsLoading] = useState(true);
+  const [isRefreshing, setIsRefreshing] = useState(false);
+  const [incomeData, setIncomeData] = useState({
+    total: 0,
+    categories: [] as { name: string; amount: number; percentage: number }[],
+  });
+  const [expenseData, setExpenseData] = useState({
+    total: 0,
+    categories: [] as { name: string; amount: number; percentage: number }[],
+  });
+  const [error, setError] = useState<string | null>(null);
 
   const balance = incomeData.total - expenseData.total;
-  const savingsRate = ((balance / incomeData.total) * 100).toFixed(1);
+  const savingsRate = incomeData.total > 0 ? ((balance / incomeData.total) * 100).toFixed(1) : '0.0';
+
+  // Fetch data from backend
+  const fetchData = async () => {
+    try {
+      setError(null);
+      
+      // Get income data
+      const incomesData = await incomeAPI.getIncomes();
+      
+      // Calculate total income
+      const totalIncome = incomesData.reduce((sum: number, income: any) => sum + income.amount, 0);
+      
+      // Group incomes by category and calculate percentages
+      const incomeCategories = {} as Record<string, number>;
+      incomesData.forEach((income: any) => {
+        if (incomeCategories[income.category]) {
+          incomeCategories[income.category] += income.amount;
+        } else {
+          incomeCategories[income.category] = income.amount;
+        }
+      });
+      
+      const incomeCategoriesArray = Object.keys(incomeCategories).map(category => {
+        const amount = incomeCategories[category];
+        const percentage = totalIncome > 0 ? (amount / totalIncome) * 100 : 0;
+        return {
+          name: category,
+          amount,
+          percentage: parseFloat(percentage.toFixed(1)),
+        };
+      });
+      
+      // Sort by amount (highest first)
+      incomeCategoriesArray.sort((a, b) => b.amount - a.amount);
+      
+      setIncomeData({
+        total: totalIncome,
+        categories: incomeCategoriesArray,
+      });
+      
+      // Get expense data
+      const expensesData = await expenseAPI.getExpenses();
+      
+      // Calculate total expenses
+      const totalExpense = expensesData.reduce((sum: number, expense: any) => sum + expense.amount, 0);
+      
+      // Group expenses by category and calculate percentages
+      const expenseCategories = {} as Record<string, number>;
+      expensesData.forEach((expense: any) => {
+        if (expenseCategories[expense.category]) {
+          expenseCategories[expense.category] += expense.amount;
+        } else {
+          expenseCategories[expense.category] = expense.amount;
+        }
+      });
+      
+      const expenseCategoriesArray = Object.keys(expenseCategories).map(category => {
+        const amount = expenseCategories[category];
+        const percentage = totalExpense > 0 ? (amount / totalExpense) * 100 : 0;
+        return {
+          name: category,
+          amount,
+          percentage: parseFloat(percentage.toFixed(1)),
+        };
+      });
+      
+      // Sort by amount (highest first)
+      expenseCategoriesArray.sort((a, b) => b.amount - a.amount);
+      
+      setExpenseData({
+        total: totalExpense,
+        categories: expenseCategoriesArray,
+      });
+      
+    } catch (error) {
+      console.error('Failed to fetch statistics data:', error);
+      setError('Failed to fetch statistics data. Please try again later.');
+    } finally {
+      setIsLoading(false);
+      setIsRefreshing(false);
+    }
+  };
+
+  // Fetch data on component mount
+  useEffect(() => {
+    fetchData();
+  }, []);
+
+  // Pull to refresh
+  const onRefresh = () => {
+    setIsRefreshing(true);
+    fetchData();
+  };
+
+  // Format amount
+  const formatAmount = (amount: number) => {
+    return `$${amount.toFixed(2)}`;
+  };
+
+  if (isLoading) {
+    return (
+      <View style={styles.loadingContainer}>
+        <ActivityIndicator size="large" color="#9b59b6" />
+      </View>
+    );
+  }
 
   return (
-    <ScrollView style={styles.container}>
+    <ScrollView 
+      style={styles.container}
+      refreshControl={
+        <RefreshControl refreshing={isRefreshing} onRefresh={onRefresh} />
+      }
+    >
       <View style={styles.header}>
         <Text style={styles.headerTitle}>Financial Statistics</Text>
       </View>
+
+      {error && (
+        <View style={styles.errorContainer}>
+          <Text style={styles.errorText}>{error}</Text>
+        </View>
+      )}
 
       <View style={styles.summaryCard}>
         <Text style={styles.summaryTitle}>Monthly Summary</Text>
         <View style={styles.summaryRow}>
           <View style={styles.summaryItem}>
             <Text style={styles.summaryLabel}>Income</Text>
-            <Text style={styles.summaryValue}>${incomeData.total}</Text>
+            <Text style={[styles.summaryValue, { color: '#2ecc71' }]}>
+              {formatAmount(incomeData.total)}
+            </Text>
           </View>
           <View style={styles.summaryItem}>
             <Text style={styles.summaryLabel}>Expenses</Text>
-            <Text style={styles.summaryValue}>${expenseData.total}</Text>
+            <Text style={[styles.summaryValue, { color: '#e74c3c' }]}>
+              {formatAmount(expenseData.total)}
+            </Text>
           </View>
         </View>
         <View style={styles.summaryRow}>
           <View style={styles.summaryItem}>
             <Text style={styles.summaryLabel}>Balance</Text>
-            <Text style={[styles.summaryValue, styles.balanceValue]}>${balance}</Text>
+            <Text style={[
+              styles.summaryValue, 
+              balance >= 0 ? styles.positiveBalance : styles.negativeBalance
+            ]}>
+              {formatAmount(balance)}
+            </Text>
           </View>
           <View style={styles.summaryItem}>
             <Text style={styles.summaryLabel}>Savings Rate</Text>
-            <Text style={[styles.summaryValue, styles.balanceValue]}>{savingsRate}%</Text>
+            <Text style={[
+              styles.summaryValue, 
+              parseFloat(savingsRate) >= 0 ? styles.positiveBalance : styles.negativeBalance
+            ]}>
+              {savingsRate}%
+            </Text>
           </View>
         </View>
       </View>
 
       <View style={styles.section}>
         <Text style={styles.sectionTitle}>Income Breakdown</Text>
-        {incomeData.categories.map((category, index) => (
-          <View key={index} style={styles.categoryItem}>
-            <View style={styles.categoryHeader}>
-              <Text style={styles.categoryName}>{category.name}</Text>
-              <Text style={styles.categoryAmount}>${category.amount}</Text>
+        {incomeData.categories.length > 0 ? (
+          incomeData.categories.map((category, index) => (
+            <View key={index} style={styles.categoryItem}>
+              <View style={styles.categoryHeader}>
+                <Text style={styles.categoryName}>{category.name}</Text>
+                <Text style={styles.categoryAmount}>{formatAmount(category.amount)}</Text>
+              </View>
+              <View style={styles.progressBarContainer}>
+                <View 
+                  style={[
+                    styles.progressBar, 
+                    { width: `${category.percentage}%`, backgroundColor: '#2ecc71' }
+                  ]} 
+                />
+              </View>
+              <Text style={styles.categoryPercentage}>{category.percentage}%</Text>
             </View>
-            <View style={styles.progressBarContainer}>
-              <View 
-                style={[
-                  styles.progressBar, 
-                  { width: `${category.percentage}%`, backgroundColor: '#2ecc71' }
-                ]} 
-              />
-            </View>
-            <Text style={styles.categoryPercentage}>{category.percentage}%</Text>
+          ))
+        ) : (
+          <View style={styles.emptyState}>
+            <Text style={styles.emptyStateText}>No income records yet</Text>
           </View>
-        ))}
+        )}
       </View>
 
       <View style={styles.section}>
         <Text style={styles.sectionTitle}>Expense Breakdown</Text>
-        {expenseData.categories.map((category, index) => (
-          <View key={index} style={styles.categoryItem}>
-            <View style={styles.categoryHeader}>
-              <Text style={styles.categoryName}>{category.name}</Text>
-              <Text style={styles.categoryAmount}>${category.amount}</Text>
+        {expenseData.categories.length > 0 ? (
+          expenseData.categories.map((category, index) => (
+            <View key={index} style={styles.categoryItem}>
+              <View style={styles.categoryHeader}>
+                <Text style={styles.categoryName}>{category.name}</Text>
+                <Text style={styles.categoryAmount}>{formatAmount(category.amount)}</Text>
+              </View>
+              <View style={styles.progressBarContainer}>
+                <View 
+                  style={[
+                    styles.progressBar, 
+                    { width: `${category.percentage}%`, backgroundColor: '#e74c3c' }
+                  ]} 
+                />
+              </View>
+              <Text style={styles.categoryPercentage}>{category.percentage}%</Text>
             </View>
-            <View style={styles.progressBarContainer}>
-              <View 
-                style={[
-                  styles.progressBar, 
-                  { width: `${category.percentage}%`, backgroundColor: '#e74c3c' }
-                ]} 
-              />
-            </View>
-            <Text style={styles.categoryPercentage}>{category.percentage}%</Text>
+          ))
+        ) : (
+          <View style={styles.emptyState}>
+            <Text style={styles.emptyStateText}>No expense records yet</Text>
           </View>
-        ))}
+        )}
       </View>
     </ScrollView>
   );
@@ -107,6 +241,12 @@ const styles = StyleSheet.create({
     flex: 1,
     backgroundColor: '#f5f5f5',
   },
+  loadingContainer: {
+    flex: 1,
+    justifyContent: 'center',
+    alignItems: 'center',
+    backgroundColor: '#f5f5f5',
+  },
   header: {
     padding: 20,
     backgroundColor: '#9b59b6',
@@ -115,6 +255,17 @@ const styles = StyleSheet.create({
     fontSize: 24,
     fontWeight: 'bold',
     color: 'white',
+  },
+  errorContainer: {
+    margin: 15,
+    padding: 10,
+    backgroundColor: '#ffdddd',
+    borderRadius: 5,
+    borderLeftWidth: 5,
+    borderLeftColor: '#e74c3c',
+  },
+  errorText: {
+    color: '#c0392b',
   },
   summaryCard: {
     margin: 15,
@@ -149,8 +300,11 @@ const styles = StyleSheet.create({
     fontWeight: 'bold',
     marginTop: 5,
   },
-  balanceValue: {
+  positiveBalance: {
     color: '#2ecc71',
+  },
+  negativeBalance: {
+    color: '#e74c3c',
   },
   section: {
     margin: 15,
@@ -199,6 +353,14 @@ const styles = StyleSheet.create({
     fontSize: 12,
     color: '#666',
     textAlign: 'right',
+  },
+  emptyState: {
+    alignItems: 'center',
+    padding: 20,
+  },
+  emptyStateText: {
+    color: '#999',
+    fontSize: 16,
   },
 });
 

@@ -1,46 +1,192 @@
-import React from 'react';
-import { View, Text, StyleSheet, ScrollView } from 'react-native';
+import React, { useState, useEffect } from 'react';
+import { View, Text, StyleSheet, ScrollView, ActivityIndicator, RefreshControl, TouchableOpacity } from 'react-native';
+import { incomeAPI, expenseAPI, budgetAPI } from '../utils/api';
+import { useAuth } from '../utils/AuthContext';
+
+interface Transaction {
+  id: number;
+  amount: number;
+  category: string;
+  date: string;
+  description: string;
+}
 
 const HomeScreen = () => {
-  return (
-    <ScrollView style={styles.container}>
-      <View style={styles.header}>
-        <Text style={styles.headerTitle}>JCEco Finance</Text>
-        <Text style={styles.headerSubtitle}>Your Personal Finance Assistant</Text>
+  const { user, logout } = useAuth();
+  const [isLoading, setIsLoading] = useState(true);
+  const [isRefreshing, setIsRefreshing] = useState(false);
+  const [incomes, setIncomes] = useState<Transaction[]>([]);
+  const [expenses, setExpenses] = useState<Transaction[]>([]);
+  const [budgetAnalysis, setBudgetAnalysis] = useState<any>(null);
+  const [error, setError] = useState<string | null>(null);
+
+  // Calculate total income
+  const totalIncome = incomes.reduce((sum, income) => sum + income.amount, 0);
+  
+  // Calculate total expenses
+  const totalExpense = expenses.reduce((sum, expense) => sum + expense.amount, 0);
+  
+  // Calculate balance
+  const balance = totalIncome - totalExpense;
+
+  // Fetch data
+  const fetchData = async () => {
+    try {
+      setError(null);
+      
+      // Get income data
+      const incomesData = await incomeAPI.getIncomes();
+      setIncomes(incomesData);
+      
+      // Get expense data
+      const expensesData = await expenseAPI.getExpenses();
+      setExpenses(expensesData);
+      
+      // Get budget analysis
+      const budgetData = await budgetAPI.getBudgetAnalysis();
+      setBudgetAnalysis(budgetData);
+    } catch (error) {
+      console.error('Failed to fetch data:', error);
+      setError('Failed to fetch data. Please try again later.');
+    } finally {
+      setIsLoading(false);
+      setIsRefreshing(false);
+    }
+  };
+
+  // Fetch data on component mount
+  useEffect(() => {
+    fetchData();
+  }, []);
+
+  // Pull to refresh
+  const onRefresh = () => {
+    setIsRefreshing(true);
+    fetchData();
+  };
+
+  // Handle logout
+  const handleLogout = () => {
+    logout();
+  };
+
+  // Format amount
+  const formatAmount = (amount: number) => {
+    return `$${amount.toFixed(2)}`;
+  };
+
+  // Get recent transactions
+  const getRecentTransactions = () => {
+    const allTransactions = [
+      ...incomes.map(income => ({ ...income, type: 'income' })),
+      ...expenses.map(expense => ({ ...expense, type: 'expense' }))
+    ];
+    
+    // Sort by date, newest first
+    return allTransactions
+      .sort((a, b) => new Date(b.date).getTime() - new Date(a.date).getTime())
+      .slice(0, 5); // Only show the 5 most recent
+  };
+
+  if (isLoading) {
+    return (
+      <View style={styles.loadingContainer}>
+        <ActivityIndicator size="large" color="#3498db" />
       </View>
+    );
+  }
+
+  return (
+    <ScrollView 
+      style={styles.container}
+      refreshControl={
+        <RefreshControl refreshing={isRefreshing} onRefresh={onRefresh} />
+      }
+    >
+      <View style={styles.header}>
+        <View>
+          <Text style={styles.headerTitle}>JCEco Finance</Text>
+          <Text style={styles.headerSubtitle}>
+            {user ? `Welcome back, ${user.username}` : 'Your Personal Finance Assistant'}
+          </Text>
+        </View>
+        <TouchableOpacity onPress={handleLogout} style={styles.logoutButton}>
+          <Text style={styles.logoutText}>Logout</Text>
+        </TouchableOpacity>
+      </View>
+      
+      {error && (
+        <View style={styles.errorContainer}>
+          <Text style={styles.errorText}>{error}</Text>
+        </View>
+      )}
       
       <View style={styles.summaryCard}>
         <Text style={styles.summaryTitle}>Monthly Overview</Text>
         <View style={styles.summaryRow}>
           <View style={styles.summaryItem}>
             <Text style={styles.summaryLabel}>Income</Text>
-            <Text style={styles.summaryValue}>$0.00</Text>
+            <Text style={[styles.summaryValue, { color: '#2ecc71' }]}>
+              {formatAmount(totalIncome)}
+            </Text>
           </View>
           <View style={styles.summaryItem}>
             <Text style={styles.summaryLabel}>Expenses</Text>
-            <Text style={styles.summaryValue}>$0.00</Text>
+            <Text style={[styles.summaryValue, { color: '#e74c3c' }]}>
+              {formatAmount(totalExpense)}
+            </Text>
           </View>
         </View>
         <View style={styles.summaryRow}>
           <View style={styles.summaryItem}>
             <Text style={styles.summaryLabel}>Balance</Text>
-            <Text style={[styles.summaryValue, styles.balanceValue]}>$0.00</Text>
+            <Text style={[
+              styles.summaryValue, 
+              balance >= 0 ? styles.positiveBalance : styles.negativeBalance
+            ]}>
+              {formatAmount(balance)}
+            </Text>
           </View>
         </View>
       </View>
       
       <View style={styles.section}>
         <Text style={styles.sectionTitle}>Recent Transactions</Text>
-        <View style={styles.emptyState}>
-          <Text style={styles.emptyStateText}>No transactions yet</Text>
-        </View>
+        {getRecentTransactions().length > 0 ? (
+          getRecentTransactions().map((transaction: any) => (
+            <View key={`${transaction.type}-${transaction.id}`} style={styles.transactionItem}>
+              <View>
+                <Text style={styles.transactionCategory}>{transaction.category}</Text>
+                <Text style={styles.transactionDate}>
+                  {new Date(transaction.date).toLocaleDateString()}
+                </Text>
+              </View>
+              <Text style={[
+                styles.transactionAmount,
+                transaction.type === 'income' ? styles.incomeText : styles.expenseText
+              ]}>
+                {transaction.type === 'income' ? '+' : '-'}{formatAmount(transaction.amount)}
+              </Text>
+            </View>
+          ))
+        ) : (
+          <View style={styles.emptyState}>
+            <Text style={styles.emptyStateText}>No transactions yet</Text>
+          </View>
+        )}
       </View>
       
       <View style={styles.section}>
         <Text style={styles.sectionTitle}>Budget Status</Text>
-        <View style={styles.emptyState}>
-          <Text style={styles.emptyStateText}>No budget set</Text>
-        </View>
+        {budgetAnalysis ? (
+          <View>
+            <Text>Budget analysis data will be displayed here</Text>
+          </View>
+        ) : (
+          <View style={styles.emptyState}>
+            <Text style={styles.emptyStateText}>No budget set</Text>
+          </View>
+        )}
       </View>
     </ScrollView>
   );
@@ -51,9 +197,18 @@ const styles = StyleSheet.create({
     flex: 1,
     backgroundColor: '#f5f5f5',
   },
+  loadingContainer: {
+    flex: 1,
+    justifyContent: 'center',
+    alignItems: 'center',
+    backgroundColor: '#f5f5f5',
+  },
   header: {
     padding: 20,
     backgroundColor: '#3498db',
+    flexDirection: 'row',
+    justifyContent: 'space-between',
+    alignItems: 'center',
   },
   headerTitle: {
     fontSize: 24,
@@ -64,6 +219,27 @@ const styles = StyleSheet.create({
     fontSize: 16,
     color: 'rgba(255, 255, 255, 0.8)',
     marginTop: 5,
+  },
+  logoutButton: {
+    backgroundColor: 'rgba(255, 255, 255, 0.2)',
+    paddingVertical: 8,
+    paddingHorizontal: 12,
+    borderRadius: 20,
+  },
+  logoutText: {
+    color: 'white',
+    fontWeight: 'bold',
+  },
+  errorContainer: {
+    margin: 15,
+    padding: 10,
+    backgroundColor: '#ffdddd',
+    borderRadius: 5,
+    borderLeftWidth: 5,
+    borderLeftColor: '#e74c3c',
+  },
+  errorText: {
+    color: '#c0392b',
   },
   summaryCard: {
     margin: 15,
@@ -98,8 +274,11 @@ const styles = StyleSheet.create({
     fontWeight: 'bold',
     marginTop: 5,
   },
-  balanceValue: {
+  positiveBalance: {
     color: '#2ecc71',
+  },
+  negativeBalance: {
+    color: '#e74c3c',
   },
   section: {
     margin: 15,
@@ -117,6 +296,33 @@ const styles = StyleSheet.create({
     fontSize: 18,
     fontWeight: 'bold',
     marginBottom: 15,
+  },
+  transactionItem: {
+    flexDirection: 'row',
+    justifyContent: 'space-between',
+    alignItems: 'center',
+    paddingVertical: 12,
+    borderBottomWidth: 1,
+    borderBottomColor: '#f0f0f0',
+  },
+  transactionCategory: {
+    fontSize: 16,
+    fontWeight: '500',
+  },
+  transactionDate: {
+    fontSize: 12,
+    color: '#999',
+    marginTop: 4,
+  },
+  transactionAmount: {
+    fontSize: 16,
+    fontWeight: 'bold',
+  },
+  incomeText: {
+    color: '#2ecc71',
+  },
+  expenseText: {
+    color: '#e74c3c',
   },
   emptyState: {
     alignItems: 'center',

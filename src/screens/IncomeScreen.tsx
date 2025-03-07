@@ -1,15 +1,17 @@
 import React, { useState } from 'react';
-import { View, Text, StyleSheet, TextInput, TouchableOpacity, ScrollView, Alert } from 'react-native';
+import { View, Text, StyleSheet, TextInput, TouchableOpacity, ScrollView, Alert, ActivityIndicator } from 'react-native';
+import { incomeAPI } from '../utils/api';
 
 const IncomeScreen = () => {
   const [amount, setAmount] = useState('');
   const [description, setDescription] = useState('');
   const [category, setCategory] = useState('Salary');
   const [date, setDate] = useState(new Date().toISOString().split('T')[0]);
+  const [isLoading, setIsLoading] = useState(false);
 
   const categories = ['Salary', 'Bonus', 'Investment', 'Freelance', 'Other'];
 
-  const handleAddIncome = () => {
+  const handleAddIncome = async () => {
     if (!amount || isNaN(Number(amount))) {
       Alert.alert('Error', 'Please enter a valid amount');
       return;
@@ -20,14 +22,29 @@ const IncomeScreen = () => {
       return;
     }
 
-    // Logic to save income record should be added here
-    Alert.alert('Success', 'Income record added');
-    
-    // Reset form
-    setAmount('');
-    setDescription('');
-    setCategory('Salary');
-    setDate(new Date().toISOString().split('T')[0]);
+    setIsLoading(true);
+    try {
+      // Call API to add income record
+      await incomeAPI.addIncome({
+        amount: Number(amount),
+        category,
+        date,
+        description
+      });
+      
+      Alert.alert('Success', 'Income record added');
+      
+      // Reset form
+      setAmount('');
+      setDescription('');
+      setCategory('Salary');
+      setDate(new Date().toISOString().split('T')[0]);
+    } catch (error) {
+      console.error('Failed to add income record:', error);
+      Alert.alert('Error', 'Failed to add income record. Please try again');
+    } finally {
+      setIsLoading(false);
+    }
   };
 
   return (
@@ -93,8 +110,16 @@ const IncomeScreen = () => {
           />
         </View>
 
-        <TouchableOpacity style={styles.addButton} onPress={handleAddIncome}>
-          <Text style={styles.addButtonText}>Add Income</Text>
+        <TouchableOpacity 
+          style={[styles.addButton, isLoading && styles.addButtonDisabled]} 
+          onPress={handleAddIncome}
+          disabled={isLoading}
+        >
+          {isLoading ? (
+            <ActivityIndicator color="white" size="small" />
+          ) : (
+            <Text style={styles.addButtonText}>Add Income</Text>
+          )}
         </TouchableOpacity>
       </View>
     </ScrollView>
@@ -169,6 +194,9 @@ const styles = StyleSheet.create({
     borderRadius: 5,
     alignItems: 'center',
     marginTop: 10,
+  },
+  addButtonDisabled: {
+    backgroundColor: '#95a5a6',
   },
   addButtonText: {
     color: 'white',

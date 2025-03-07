@@ -1,10 +1,13 @@
 import React, { useState } from 'react';
-import { View, Text, StyleSheet, Switch, TouchableOpacity, ScrollView, Alert } from 'react-native';
+import { View, Text, StyleSheet, Switch, TouchableOpacity, ScrollView, Alert, ActivityIndicator } from 'react-native';
+import { useAuth } from '../utils/AuthContext';
 
 const SettingsScreen = () => {
+  const { user, logout } = useAuth();
   const [darkMode, setDarkMode] = useState(false);
   const [notifications, setNotifications] = useState(true);
   const [currency, setCurrency] = useState('USD');
+  const [isLoading, setIsLoading] = useState(false);
 
   const handleCurrencyChange = (newCurrency: string) => {
     setCurrency(newCurrency);
@@ -29,11 +32,45 @@ const SettingsScreen = () => {
     );
   };
 
+  const handleLogout = async () => {
+    setIsLoading(true);
+    try {
+      await logout();
+      // Logout successful, AuthContext will automatically update state and navigate to login screen
+    } catch (error) {
+      console.error('Logout failed:', error);
+      Alert.alert('Error', 'Logout failed. Please try again');
+    } finally {
+      setIsLoading(false);
+    }
+  };
+
   return (
     <ScrollView style={styles.container}>
       <View style={styles.header}>
         <Text style={styles.headerTitle}>Settings</Text>
       </View>
+
+      {user && (
+        <View style={styles.section}>
+          <Text style={styles.sectionTitle}>User Information</Text>
+          <View style={styles.userInfo}>
+            <Text style={styles.userName}>{user.username}</Text>
+            <Text style={styles.userEmail}>{user.email}</Text>
+          </View>
+          <TouchableOpacity 
+            style={styles.logoutButton} 
+            onPress={handleLogout}
+            disabled={isLoading}
+          >
+            {isLoading ? (
+              <ActivityIndicator color="white" size="small" />
+            ) : (
+              <Text style={styles.logoutButtonText}>Logout</Text>
+            )}
+          </TouchableOpacity>
+        </View>
+      )}
 
       <View style={styles.section}>
         <Text style={styles.sectionTitle}>Appearance</Text>
@@ -133,6 +170,30 @@ const styles = StyleSheet.create({
     fontSize: 18,
     fontWeight: 'bold',
     marginBottom: 15,
+  },
+  userInfo: {
+    alignItems: 'center',
+    marginBottom: 15,
+  },
+  userName: {
+    fontSize: 20,
+    fontWeight: 'bold',
+    marginBottom: 5,
+  },
+  userEmail: {
+    fontSize: 16,
+    color: '#666',
+  },
+  logoutButton: {
+    backgroundColor: '#3498db',
+    padding: 15,
+    borderRadius: 5,
+    alignItems: 'center',
+  },
+  logoutButtonText: {
+    color: 'white',
+    fontSize: 16,
+    fontWeight: 'bold',
   },
   settingItem: {
     flexDirection: 'row',
