@@ -195,14 +195,9 @@ app.get("/income", verifyToken, (req, res) => {
     query(sql, [req.userId])
         .then((results) => {
             // 确保results是一个数组
-            const incomeRecords = Array.isArray(results) ? results[0] : [];
-            if (incomeRecords) {
-                console.log(`✅ Retrieved ${incomeRecords.length} income records for user:`, req.userId);
-                res.json(incomeRecords);
-            } else {
-                console.log(`✅ No income records found for user:`, req.userId);
-                res.json([]);
-            }
+            const incomeRecords = Array.isArray(results) ? results : [];
+            console.log(`✅ Retrieved ${incomeRecords.length} income records for user:`, req.userId);
+            res.json(incomeRecords);
         })
         .catch((err) => {
             console.error("❌ Failed to get income records:", err.message);
@@ -239,14 +234,9 @@ app.get("/expenses", verifyToken, (req, res) => {
     query(sql, [req.userId])
         .then((results) => {
             // 确保results是一个数组
-            const expenseRecords = Array.isArray(results) ? results[0] : [];
-            if (expenseRecords) {
-                console.log(`✅ Retrieved ${expenseRecords.length} expense records for user:`, req.userId);
-                res.json(expenseRecords);
-            } else {
-                console.log(`✅ No expense records found for user:`, req.userId);
-                res.json([]);
-            }
+            const expenseRecords = Array.isArray(results) ? results : [];
+            console.log(`✅ Retrieved ${expenseRecords.length} expense records for user:`, req.userId);
+            res.json(expenseRecords);
         })
         .catch((err) => {
             console.error("❌ Failed to get expense records:", err.message);
@@ -272,21 +262,21 @@ app.get("/budget/analysis", verifyToken, (req, res) => {
     query(incomeQuery, [req.userId, firstDay, lastDay])
         .then((incomeResults) => {
             // 确保incomeResults是一个数组
-            const incomeData = Array.isArray(incomeResults) ? incomeResults[0] : [];
-            const totalIncome = incomeData && incomeData[0] && incomeData[0].total_income ? incomeData[0].total_income : 0;
+            const totalIncome = incomeResults && incomeResults[0] && incomeResults[0].total_income ? 
+                Number(incomeResults[0].total_income) : 0;
             
             // 执行支出查询
             query(expenseQuery, [req.userId, firstDay, lastDay])
                 .then((expenseResults) => {
                     // 确保expenseResults是一个数组
-                    const expenseData = Array.isArray(expenseResults) ? expenseResults[0] : [];
-                    const totalExpense = expenseData && expenseData[0] && expenseData[0].total_expense ? expenseData[0].total_expense : 0;
+                    const totalExpense = expenseResults && expenseResults[0] && expenseResults[0].total_expense ? 
+                        Number(expenseResults[0].total_expense) : 0;
                     
                     // 执行类别查询
                     query(categoryQuery, [req.userId, firstDay, lastDay])
                         .then((categoryResults) => {
                             // 确保categoryResults是一个数组
-                            const categoryData = Array.isArray(categoryResults) ? categoryResults[0] : [];
+                            const categoryData = Array.isArray(categoryResults) ? categoryResults : [];
                             
                             // 计算余额和节省率
                             const balance = totalIncome - totalExpense;
@@ -324,4 +314,81 @@ app.get("/budget/analysis", verifyToken, (req, res) => {
             console.error("❌ Failed to get income analysis:", err.message);
             res.status(500).json({ error: "Failed to get budget analysis: " + err.message });
         });
+});
+
+// Import API - Handle imported transactions from payment platforms
+app.post('/api/import', verifyToken, async (req, res) => {
+    try {
+        const { transactions } = req.body;
+        const userId = req.userId;
+        
+        console.log(`📥 Received ${transactions.length} imported transactions for user ${userId}`);
+        
+        // Validate transactions array
+        if (!Array.isArray(transactions) || transactions.length === 0) {
+            return res.status(400).json({ error: "Invalid transactions data format" });
+        }
+
+        // Process transactions based on type (income or expense)
+        const incomeTransactions = transactions.filter(t => t.type === 'income');
+        const expenseTransactions = transactions.filter(t => t.type === 'expense');
+        
+        // Process income transactions
+        if (incomeTransactions.length > 0) {
+            const incomeValues = incomeTransactions.map(t => {
+                return [
+                    userId,
+                    t.amount,
+                    t.category,
+                    t.date,
+                    t.description,
+                    `Imported from ${t.source}`
+                ];
+            });
+            
+            const incomeQuery = `
+                INSERT INTO income (user_id, amount, category, date, description, notes)
+                VALUES ?
+            `;
+            
+            await db.query(incomeQuery, [incomeValues]);
+        }
+        
+        // Process expense transactions
+        if (expenseTransactions.length > 0) {
+            const expenseValues = expenseTransactions.map(t => {
+                return [
+                    userId,
+                    t.amount,
+                    t.category,
+                    t.date,
+                    t.description,
+                    `Imported from ${t.source}`
+                ];
+            });
+            
+            const expenseQuery = `
+                INSERT INTO expenses (user_id, amount, category, date, description, notes)
+                VALUES ?
+            `;
+            
+            await db.query(expenseQuery, [expenseValues]);
+        }
+        
+        console.log(`✅ Successfully imported ${incomeTransactions.length} income and ${expenseTransactions.length} expense transactions`);
+        
+        res.status(200).json({ 
+            success: true,
+            message: `Successfully imported ${transactions.length} transactions`,
+            summary: {
+                income: incomeTransactions.length,
+                incomeTotal: incomeTransactions.reduce((sum, t) => sum + t.amount, 0),
+                expense: expenseTransactions.length,
+                expenseTotal: expenseTransactions.reduce((sum, t) => sum + t.amount, 0)
+            }
+        });
+    } catch (err) {
+        console.error("❌ Error importing transactions:", err);
+        res.status(500).json({ error: "Failed to import transactions", details: err.message });
+    }
 });

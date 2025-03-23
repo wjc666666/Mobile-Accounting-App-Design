@@ -2,6 +2,7 @@ import React, { useState } from 'react';
 import { View, Text, StyleSheet, ScrollView, ActivityIndicator, RefreshControl } from 'react-native';
 import { incomeAPI, expenseAPI } from '../utils/api';
 import { useFocusEffect } from '@react-navigation/native';
+import ImportTransactions from '../components/ImportTransactions';
 
 const StatisticsScreen = () => {
   const [isLoading, setIsLoading] = useState(true);
@@ -362,6 +363,7 @@ const StatisticsScreen = () => {
     >
       <View style={styles.header}>
         <Text style={styles.headerTitle}>Financial Statistics</Text>
+        <ImportTransactions onImportSuccess={fetchData} />
       </View>
 
       {error && (
@@ -479,6 +481,9 @@ const styles = StyleSheet.create({
   header: {
     padding: 20,
     backgroundColor: '#9b59b6',
+    flexDirection: 'row',
+    justifyContent: 'space-between',
+    alignItems: 'center',
   },
   headerTitle: {
     fontSize: 24,
