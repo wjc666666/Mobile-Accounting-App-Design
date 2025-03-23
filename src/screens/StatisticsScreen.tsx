@@ -1,5 +1,5 @@
 import React, { useState } from 'react';
-import { View, Text, StyleSheet, ScrollView, ActivityIndicator, RefreshControl } from 'react-native';
+import { View, Text, StyleSheet, ScrollView, ActivityIndicator, RefreshControl, TouchableOpacity, Alert } from 'react-native';
 import { incomeAPI, expenseAPI } from '../utils/api';
 import { useFocusEffect } from '@react-navigation/native';
 import ImportTransactions from '../components/ImportTransactions';
@@ -363,6 +363,18 @@ const StatisticsScreen = () => {
     >
       <View style={styles.header}>
         <Text style={styles.headerTitle}>Financial Statistics</Text>
+        
+        {/* Direct test button */}
+        <TouchableOpacity
+          style={styles.testButton}
+          onPress={() => {
+            console.log('TEST BUTTON PRESSED');
+            Alert.alert('Test Button', 'Direct test button was pressed!');
+          }}
+        >
+          <Text style={styles.testButtonText}>Test</Text>
+        </TouchableOpacity>
+        
         <View style={styles.importButtonContainer}>
           <ImportTransactions onImportSuccess={fetchData} />
         </View>
@@ -604,6 +616,17 @@ const styles = StyleSheet.create({
   emptyStateText: {
     color: '#999',
     fontSize: 16,
+  },
+  testButton: {
+    backgroundColor: '#e74c3c',
+    paddingHorizontal: 15,
+    paddingVertical: 8,
+    borderRadius: 20,
+    marginRight: 10,
+  },
+  testButtonText: {
+    color: 'white',
+    fontWeight: 'bold',
   },
 });
 
