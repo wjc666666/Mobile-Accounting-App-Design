@@ -1,5 +1,14 @@
-import React, { useState, useCallback, useEffect } from 'react';
-import { View, Text, StyleSheet, TouchableOpacity, Alert, Modal, ActivityIndicator, Platform, TouchableWithoutFeedback, Button } from 'react-native';
+import React, { useState } from 'react';
+import { 
+  View, 
+  Text, 
+  StyleSheet, 
+  TouchableOpacity, 
+  Alert, 
+  Modal, 
+  ActivityIndicator, 
+  Platform 
+} from 'react-native';
 import Ionicons from 'react-native-vector-icons/Ionicons';
 import paymentApis, { ImportedTransaction } from '../utils/paymentApis';
 
@@ -17,18 +26,6 @@ const ImportTransactions: React.FC<ImportTransactionsProps> = ({ onImportSuccess
   const [isLoading, setIsLoading] = useState(false);
   const [loadingMessage, setLoadingMessage] = useState('');
   const [showImportInstructions, setShowImportInstructions] = useState(false);
-
-  // 确保组件每次重新渲染时都能响应触摸事件
-  useEffect(() => {
-    console.log('ImportTransactions component mounted or updated');
-    
-    // 清理函数
-    return () => {
-      console.log('ImportTransactions component will unmount');
-    };
-  }, []);
-
-  console.log('ImportTransactions component rendering, modal visible:', isModalVisible);
 
   // Get the current month's start and end dates
   const getCurrentMonthDates = () => {
@@ -239,7 +236,6 @@ const ImportTransactions: React.FC<ImportTransactionsProps> = ({ onImportSuccess
         <TouchableOpacity
           style={[styles.optionButton, styles.importButton]}
           onPress={mockImportData}
-          activeOpacity={0.7}
         >
           <Ionicons name="cloud-download-outline" size={24} color="white" />
           <Text style={styles.optionButtonText}>Import Selected Bills</Text>
@@ -248,7 +244,6 @@ const ImportTransactions: React.FC<ImportTransactionsProps> = ({ onImportSuccess
         <TouchableOpacity
           style={styles.closeButton}
           onPress={() => setShowImportInstructions(false)}
-          activeOpacity={0.7}
         >
           <Text style={styles.closeButtonText}>Cancel</Text>
         </TouchableOpacity>
@@ -256,27 +251,19 @@ const ImportTransactions: React.FC<ImportTransactionsProps> = ({ onImportSuccess
     );
   };
 
-  // Debug import touches
-  const handleImportPress = () => {
-    console.log('DIRECT BUTTON PRESS - IMPORT BUTTON PRESSED');
-    Alert.alert('Button Pressed', 'Import button was pressed!');
-    setIsModalVisible(true);
-  };
-
-  // 关闭模态框
-  const closeModal = useCallback(() => {
-    console.log('Close button pressed');
-    setIsModalVisible(false);
-  }, []);
-
   return (
-    <View style={styles.outerContainer}>
-      {/* Basic button without any fancy styling to test touch responsiveness */}
-      <Button 
-        title="Import" 
-        onPress={handleImportPress} 
-        color="#9b59b6"
-      />
+    <View style={styles.container}>
+      <TouchableOpacity 
+        style={styles.importButton}
+        onPress={() => {
+          console.log('Import button pressed');
+          Alert.alert('Button Pressed', 'Import button was pressed!');
+          setIsModalVisible(true);
+        }}
+      >
+        <Ionicons name="cloud-download-outline" size={20} color="white" />
+        <Text style={styles.importButtonText}>Import</Text>
+      </TouchableOpacity>
       
       <Modal
         visible={isModalVisible}
@@ -287,74 +274,58 @@ const ImportTransactions: React.FC<ImportTransactionsProps> = ({ onImportSuccess
           setIsModalVisible(false);
         }}
       >
-        <TouchableWithoutFeedback onPress={() => {
-          console.log('Background pressed, closing modal');
-          setIsModalVisible(false);
-        }}>
-          <View style={styles.modalContainer}>
-            <TouchableWithoutFeedback>
-              <View style={styles.modalContent}>
-                {isLoading ? (
-                  <View style={styles.loadingContainer}>
-                    <ActivityIndicator size="large" color="#9b59b6" />
-                    <Text style={styles.loadingText}>{loadingMessage}</Text>
-                  </View>
-                ) : showImportInstructions ? (
-                  renderImportInstructions()
-                ) : (
-                  <>
-                    <Text style={styles.modalTitle}>Import Transactions</Text>
-                    <Text style={styles.modalSubtitle}>Import transactions from other payment platforms</Text>
-                    
-                    <View style={styles.optionsContainer}>
-                      <TouchableOpacity
-                        style={[styles.optionButton, styles.alipayButton]}
-                        onPress={importFromAlipay}
-                        activeOpacity={0.7}
-                      >
-                        <Ionicons name="logo-alipay" size={24} color="white" />
-                        <Text style={styles.optionButtonText}>Import from Alipay</Text>
-                      </TouchableOpacity>
-                      
-                      <TouchableOpacity
-                        style={[styles.optionButton, styles.wechatButton]}
-                        onPress={importFromWeChat}
-                        activeOpacity={0.7}
-                      >
-                        <Ionicons name="logo-wechat" size={24} color="white" />
-                        <Text style={styles.optionButtonText}>Import from WeChat</Text>
-                      </TouchableOpacity>
-                    </View>
-                    
-                    <TouchableOpacity
-                      style={styles.closeButton}
-                      onPress={closeModal}
-                      activeOpacity={0.7}
-                    >
-                      <Text style={styles.closeButtonText}>Close</Text>
-                    </TouchableOpacity>
-                  </>
-                )}
+        <View style={styles.modalContainer}>
+          <View style={styles.modalContent}>
+            {isLoading ? (
+              <View style={styles.loadingContainer}>
+                <ActivityIndicator size="large" color="#9b59b6" />
+                <Text style={styles.loadingText}>{loadingMessage}</Text>
               </View>
-            </TouchableWithoutFeedback>
+            ) : showImportInstructions ? (
+              renderImportInstructions()
+            ) : (
+              <>
+                <Text style={styles.modalTitle}>Import Transactions</Text>
+                <Text style={styles.modalSubtitle}>Import transactions from other payment platforms</Text>
+                
+                <View style={styles.optionsContainer}>
+                  <TouchableOpacity
+                    style={[styles.optionButton, styles.alipayButton]}
+                    onPress={importFromAlipay}
+                  >
+                    <Ionicons name="logo-alipay" size={24} color="white" />
+                    <Text style={styles.optionButtonText}>Import from Alipay</Text>
+                  </TouchableOpacity>
+                  
+                  <TouchableOpacity
+                    style={[styles.optionButton, styles.wechatButton]}
+                    onPress={importFromWeChat}
+                  >
+                    <Ionicons name="logo-wechat" size={24} color="white" />
+                    <Text style={styles.optionButtonText}>Import from WeChat</Text>
+                  </TouchableOpacity>
+                </View>
+                
+                <TouchableOpacity
+                  style={styles.closeButton}
+                  onPress={() => setIsModalVisible(false)}
+                >
+                  <Text style={styles.closeButtonText}>Close</Text>
+                </TouchableOpacity>
+              </>
+            )}
           </View>
-        </TouchableWithoutFeedback>
+        </View>
       </Modal>
     </View>
   );
 };
 
 const styles = StyleSheet.create({
-  outerContainer: {
-    // Simplified container with no fancy styling that could block touches
-    minWidth: 100,
-  },
   container: {
-    alignItems: 'center',
-    justifyContent: 'center',
-    zIndex: 999,
     minWidth: 100,
     minHeight: 40,
+    justifyContent: 'center',
   },
   importButton: {
     flexDirection: 'row',
@@ -369,6 +340,11 @@ const styles = StyleSheet.create({
     shadowOffset: { width: 0, height: 2 },
     shadowOpacity: 0.3,
     shadowRadius: 4,
+  },
+  importButtonText: {
+    color: 'white',
+    fontWeight: 'bold',
+    marginLeft: 5,
   },
   modalContainer: {
     flex: 1,
