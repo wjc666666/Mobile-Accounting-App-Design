@@ -1,319 +1,183 @@
-import React, { useState } from 'react';
-import { 
-  View, 
-  Text, 
-  StyleSheet, 
-  TouchableOpacity, 
-  Alert, 
-  Modal, 
-  ActivityIndicator 
-} from 'react-native';
+import React, { useState, useCallback, useEffect } from 'react';
+import { View, StyleSheet, TouchableOpacity, Modal, Text, Alert, TouchableWithoutFeedback, Platform } from 'react-native';
 import Ionicons from 'react-native-vector-icons/Ionicons';
-import paymentApis, { ImportedTransaction } from '../utils/paymentApis';
+import paymentApis from '../utils/paymentApis';
 
 interface ImportTransactionsProps {
-  onImportSuccess: (summary: {
-    income: number;
-    incomeTotal: number;
-    expense: number;
-    expenseTotal: number;
-  }) => void;
+  onImportSuccess?: () => void;
 }
 
 const ImportTransactions: React.FC<ImportTransactionsProps> = ({ onImportSuccess }) => {
-  const [isModalVisible, setIsModalVisible] = useState(false);
-  const [isLoading, setIsLoading] = useState(false);
-  const [loadingMessage, setLoadingMessage] = useState('');
-  const [showImportInstructions, setShowImportInstructions] = useState(false);
-
-  // Get the current month's start and end dates
-  const getCurrentMonthDates = () => {
-    const now = new Date();
-    const startDate = new Date(now.getFullYear(), now.getMonth(), 1);
-    const endDate = new Date(now.getFullYear(), now.getMonth() + 1, 0);
+  const [modalVisible, setModalVisible] = useState(false);
+  const [isImporting, setIsImporting] = useState(false);
+  const [logMessages, setLogMessages] = useState<string[]>([]);
+  
+  useEffect(() => {
+    console.log('ImportTransactions component mounted/updated');
     
-    return {
-      startDate: startDate.toISOString().split('T')[0],
-      endDate: endDate.toISOString().split('T')[0]
+    // Check if the apps are installed on component mount
+    const checkAppsInstalled = async () => {
+      try {
+        const alipayInstalled = await paymentApis.isAlipayInstalled();
+        const wechatInstalled = await paymentApis.isWeChatInstalled();
+        console.log('Alipay installed:', alipayInstalled);
+        console.log('WeChat installed:', wechatInstalled);
+        addLogMessage(`Alipay installed: ${alipayInstalled}`);
+        addLogMessage(`WeChat installed: ${wechatInstalled}`);
+      } catch (error) {
+        console.error('Error checking apps:', error);
+        addLogMessage(`Error checking apps: ${error}`);
+      }
     };
+    
+    checkAppsInstalled();
+  }, []);
+  
+  const addLogMessage = (message: string) => {
+    setLogMessages(prev => [...prev, `${new Date().toLocaleTimeString()}: ${message}`]);
   };
+  
+  const openImportModal = useCallback(() => {
+    console.log('Opening import modal');
+    setModalVisible(true);
+    setLogMessages([]);
+  }, []);
 
-  const checkAppInstallation = async (app: 'alipay' | 'wechat') => {
-    console.log(`Checking if ${app} is installed`);
+  const closeModal = useCallback(() => {
+    console.log('Closing import modal');
+    setModalVisible(false);
+  }, []);
+
+  const handleImport = useCallback(async (platform: 'alipay' | 'wechat') => {
+    console.log(`Attempting to import from ${platform}`);
+    addLogMessage(`Attempting to import from ${platform}`);
+    setIsImporting(true);
+    
     try {
-      let isInstalled = false;
+      // Check if the app is installed first
+      const isInstalled = platform === 'alipay' 
+        ? await paymentApis.isAlipayInstalled()
+        : await paymentApis.isWeChatInstalled();
       
-      if (app === 'alipay') {
-        isInstalled = await paymentApis.isAlipayInstalled();
-      } else if (app === 'wechat') {
-        isInstalled = await paymentApis.isWeChatInstalled();
-      }
-      
-      console.log(`${app} installed:`, isInstalled);
+      addLogMessage(`${platform === 'alipay' ? 'Alipay' : 'WeChat'} installed: ${isInstalled}`);
       
       if (!isInstalled) {
+        addLogMessage(`${platform === 'alipay' ? 'Alipay' : 'WeChat'} not installed`);
         Alert.alert(
-          `${app === 'alipay' ? 'Alipay' : 'WeChat'} Not Found`,
-          `Please install ${app === 'alipay' ? 'Alipay' : 'WeChat'} to continue.`,
+          'App Not Installed', 
+          `${platform === 'alipay' ? 'Alipay' : 'WeChat'} is not installed on your device.`,
           [{ text: 'OK' }]
         );
-        return false;
-      }
-      
-      return true;
-    } catch (error) {
-      console.error('Error checking app installation:', error);
-      return false;
-    }
-  };
-
-  const importFromAlipay = async () => {
-    console.log('importFromAlipay button pressed');
-    try {
-      setIsLoading(true);
-      setLoadingMessage('Checking Alipay installation...');
-      
-      const isInstalled = await checkAppInstallation('alipay');
-      if (!isInstalled) {
-        setIsLoading(false);
+        setIsImporting(false);
         return;
       }
       
-      setLoadingMessage('Opening Alipay bills page...');
+      // Try to open the app
+      const success = platform === 'alipay'
+        ? await paymentApis.openAlipayForAuth()
+        : await paymentApis.openWeChatForAuth();
       
-      // 打开支付宝账单页面
-      console.log('Attempting to open Alipay with URL scheme');
-      const authResult = await paymentApis.openAlipayForAuth();
-      console.log('openAlipayForAuth result:', authResult);
+      addLogMessage(`Open ${platform} result: ${success}`);
       
-      if (!authResult) {
-        Alert.alert('Failed to Open', 'Could not open Alipay app', [{ text: 'OK' }]);
-        setIsLoading(false);
-        return;
-      }
-      
-      // 显示导入说明
-      console.log('Setting isLoading to false and showing import instructions');
-      setIsLoading(false);
-      setShowImportInstructions(true);
-      
-    } catch (error) {
-      console.error('Error importing from Alipay:', error);
-      Alert.alert('Import Failed', 'Failed to import transactions from Alipay', [{ text: 'OK' }]);
-      setIsLoading(false);
-    }
-  };
-
-  const importFromWeChat = async () => {
-    console.log('importFromWeChat button pressed');
-    try {
-      setIsLoading(true);
-      setLoadingMessage('Checking WeChat installation...');
-      
-      const isInstalled = await checkAppInstallation('wechat');
-      if (!isInstalled) {
-        setIsLoading(false);
-        return;
-      }
-      
-      setLoadingMessage('Opening WeChat bills page...');
-      
-      // 打开微信账单页面
-      console.log('Attempting to open WeChat with URL scheme');
-      const authResult = await paymentApis.openWeChatForAuth();
-      console.log('openWeChatForAuth result:', authResult);
-      
-      if (!authResult) {
-        Alert.alert('Failed to Open', 'Could not open WeChat app', [{ text: 'OK' }]);
-        setIsLoading(false);
-        return;
-      }
-      
-      // 显示导入说明
-      console.log('Setting isLoading to false and showing import instructions');
-      setIsLoading(false);
-      setShowImportInstructions(true);
-      
-    } catch (error) {
-      console.error('Error importing from WeChat:', error);
-      Alert.alert('Import Failed', 'Failed to import transactions from WeChat', [{ text: 'OK' }]);
-      setIsLoading(false);
-    }
-  };
-
-  // 模拟导入数据（实际应用中会与真实支付平台连接）
-  const mockImportData = async () => {
-    console.log('mockImportData button pressed');
-    try {
-      setIsLoading(true);
-      setLoadingMessage('Importing transaction data...');
-      
-      // 获取当前月份的开始和结束日期
-      const { startDate, endDate } = getCurrentMonthDates();
-      console.log('Date range:', startDate, 'to', endDate);
-      
-      // 模拟从支付宝和微信导入交易记录
-      console.log('Importing mock Alipay bills');
-      const alipayTransactions = await paymentApis.importAlipayBills(startDate, endDate);
-      console.log('Alipay transactions:', alipayTransactions.length);
-      
-      console.log('Importing mock WeChat bills');
-      const wechatTransactions = await paymentApis.importWeChatBills(startDate, endDate);
-      console.log('WeChat transactions:', wechatTransactions.length);
-      
-      // 合并交易记录
-      const transactions = [...alipayTransactions, ...wechatTransactions];
-      console.log('Total transactions to save:', transactions.length);
-      
-      if (transactions.length === 0) {
-        Alert.alert('No Transactions', 'No transactions found for the current month', [{ text: 'OK' }]);
-        setIsLoading(false);
-        return;
-      }
-      
-      // 保存导入的交易记录
-      await saveImportedTransactions(transactions);
-      
-    } catch (error) {
-      console.error('Error importing data:', error);
-      Alert.alert('Import Failed', 'Failed to import transactions', [{ text: 'OK' }]);
-      setIsLoading(false);
-    }
-  };
-
-  const saveImportedTransactions = async (transactions: ImportedTransaction[]) => {
-    console.log('Saving imported transactions:', transactions.length);
-    try {
-      setLoadingMessage('Saving imported transactions...');
-      
-      console.log('Calling API to save transactions');
-      const result = await paymentApis.saveImportedTransactions(transactions);
-      console.log('Save result:', result);
-      
-      if (result.success) {
-        setIsLoading(false);
-        setIsModalVisible(false);
-        setShowImportInstructions(false);
+      if (success) {
+        addLogMessage(`Successfully opened ${platform}`);
         
-        // 显示成功消息
-        Alert.alert(
-          'Import Successful',
-          `Successfully imported ${transactions.length} transactions`,
-          [{ text: 'OK' }]
-        );
-        
-        // 调用成功回调函数
-        if (onImportSuccess && result.summary) {
-          console.log('Calling onImportSuccess with summary:', result.summary);
-          onImportSuccess(result.summary);
-        }
+        // Simulate successful import with mock data
+        setTimeout(() => {
+          addLogMessage(`Simulating successful import`);
+          setModalVisible(false);
+          if (onImportSuccess) {
+            onImportSuccess();
+          }
+        }, 1000);
       } else {
-        throw new Error('Failed to save transactions');
+        addLogMessage(`Failed to open ${platform}`);
+        Alert.alert(
+          'Error Opening App',
+          `Failed to open ${platform === 'alipay' ? 'Alipay' : 'WeChat'}. Please make sure the app is installed and try again.`,
+          [{ text: 'OK' }]
+        );
       }
     } catch (error) {
-      console.error('Error saving imported transactions:', error);
-      Alert.alert('Save Failed', 'Failed to save imported transactions', [{ text: 'OK' }]);
-      setIsLoading(false);
+      console.error(`Error importing from ${platform}:`, error);
+      addLogMessage(`Error: ${error}`);
+      Alert.alert(
+        'Import Error',
+        `An error occurred while trying to import from ${platform === 'alipay' ? 'Alipay' : 'WeChat'}.`,
+        [{ text: 'OK' }]
+      );
+    } finally {
+      setIsImporting(false);
     }
-  };
-
-  // 导入说明界面
-  const renderImportInstructions = () => {
-    return (
-      <View style={styles.instructionsContainer}>
-        <Text style={styles.modalTitle}>Import Instructions</Text>
-        <Text style={styles.instructionText}>
-          1. Select the transactions you want to import in Alipay/WeChat
-        </Text>
-        <Text style={styles.instructionText}>
-          2. Download or export the bills to your device
-        </Text>
-        <Text style={styles.instructionText}>
-          3. Return to this app and tap the "Import Selected Bills" button below
-        </Text>
-        
-        <TouchableOpacity
-          style={[styles.optionButton, styles.importButton]}
-          onPress={mockImportData}
-        >
-          <Ionicons name="cloud-download-outline" size={24} color="white" />
-          <Text style={styles.optionButtonText}>Import Selected Bills</Text>
-        </TouchableOpacity>
-        
-        <TouchableOpacity
-          style={styles.closeButton}
-          onPress={() => setShowImportInstructions(false)}
-        >
-          <Text style={styles.closeButtonText}>Cancel</Text>
-        </TouchableOpacity>
-      </View>
-    );
-  };
+  }, [onImportSuccess]);
 
   return (
-    <View style={styles.container}>
-      <TouchableOpacity 
+    <View style={styles.container} pointerEvents="box-none">
+      <TouchableOpacity
         style={styles.importButton}
-        onPress={() => {
-          console.log('Direct ImportTransactions button pressed');
-          Alert.alert('Import Button', 'Import button was pressed directly!');
-          setIsModalVisible(true);
-        }}
+        onPress={openImportModal}
+        activeOpacity={0.7}
+        hitSlop={{ top: 10, bottom: 10, left: 10, right: 10 }}
       >
-        <Text style={styles.importButtonText}>Import</Text>
+        <Ionicons name="download-outline" size={24} color="#fff" />
       </TouchableOpacity>
-      
+
       <Modal
-        visible={isModalVisible}
         animationType="slide"
         transparent={true}
-        onRequestClose={() => {
-          console.log('Modal closed via back button/gesture');
-          setIsModalVisible(false);
-        }}
+        visible={modalVisible}
+        onRequestClose={closeModal}
       >
-        <View style={styles.modalContainer}>
-          <View style={styles.modalContent}>
-            {isLoading ? (
-              <View style={styles.loadingContainer}>
-                <ActivityIndicator size="large" color="#9b59b6" />
-                <Text style={styles.loadingText}>{loadingMessage}</Text>
-              </View>
-            ) : showImportInstructions ? (
-              renderImportInstructions()
-            ) : (
-              <>
+        <TouchableWithoutFeedback onPress={closeModal}>
+          <View style={styles.modalBackground}>
+            <TouchableWithoutFeedback onPress={(e) => e.stopPropagation()}>
+              <View style={styles.modalContainer}>
                 <Text style={styles.modalTitle}>Import Transactions</Text>
-                <Text style={styles.modalSubtitle}>Import transactions from other payment platforms</Text>
+                <Text style={styles.modalSubtitle}>Select Platform:</Text>
                 
-                <View style={styles.optionsContainer}>
+                <View style={styles.buttonContainer}>
                   <TouchableOpacity
-                    style={[styles.optionButton, styles.alipayButton]}
-                    onPress={importFromAlipay}
+                    style={[styles.platformButton, isImporting && styles.disabledButton]}
+                    onPress={() => handleImport('alipay')}
+                    disabled={isImporting}
                   >
-                    <Ionicons name="logo-alipay" size={24} color="white" />
-                    <Text style={styles.optionButtonText}>Import from Alipay</Text>
+                    <Text style={styles.buttonText}>Alipay</Text>
                   </TouchableOpacity>
                   
                   <TouchableOpacity
-                    style={[styles.optionButton, styles.wechatButton]}
-                    onPress={importFromWeChat}
+                    style={[styles.platformButton, isImporting && styles.disabledButton]}
+                    onPress={() => handleImport('wechat')}
+                    disabled={isImporting}
                   >
-                    <Ionicons name="logo-wechat" size={24} color="white" />
-                    <Text style={styles.optionButtonText}>Import from WeChat</Text>
+                    <Text style={styles.buttonText}>WeChat</Text>
                   </TouchableOpacity>
                 </View>
                 
+                {isImporting && (
+                  <Text style={styles.loadingText}>Connecting to payment platform...</Text>
+                )}
+                
+                {Platform.OS === 'android' && (
+                  <View style={styles.debugContainer}>
+                    <Text style={styles.debugTitle}>Debug Log:</Text>
+                    <View style={styles.logContainer}>
+                      {logMessages.map((msg, index) => (
+                        <Text key={index} style={styles.logMessage}>{msg}</Text>
+                      ))}
+                    </View>
+                  </View>
+                )}
+                
                 <TouchableOpacity
                   style={styles.closeButton}
-                  onPress={() => setIsModalVisible(false)}
+                  onPress={closeModal}
                 >
                   <Text style={styles.closeButtonText}>Close</Text>
                 </TouchableOpacity>
-              </>
-            )}
+              </View>
+            </TouchableWithoutFeedback>
           </View>
-        </View>
+        </TouchableWithoutFeedback>
       </Modal>
     </View>
   );
@@ -321,38 +185,40 @@ const ImportTransactions: React.FC<ImportTransactionsProps> = ({ onImportSuccess
 
 const styles = StyleSheet.create({
   container: {
-    width: 100,
-    height: 40,
+    position: 'absolute',
+    top: 0,
+    right: 0,
+    zIndex: 100,
   },
   importButton: {
-    backgroundColor: '#9b59b6',
-    paddingHorizontal: 12,
-    paddingVertical: 8,
+    backgroundColor: '#6200ee',
+    width: 40,
+    height: 40,
     borderRadius: 20,
-    alignItems: 'center',
     justifyContent: 'center',
+    alignItems: 'center',
+    marginRight: 10,
+    marginTop: 5,
+    elevation: 3,
+    shadowColor: '#000',
+    shadowOffset: { width: 0, height: 2 },
+    shadowOpacity: 0.2,
+    shadowRadius: 3,
   },
-  importButtonText: {
-    color: 'white',
-    fontWeight: 'bold',
+  modalBackground: {
+    flex: 1,
+    backgroundColor: 'rgba(0, 0, 0, 0.5)',
+    justifyContent: 'center',
+    alignItems: 'center',
   },
   modalContainer: {
-    flex: 1,
-    justifyContent: 'center',
-    alignItems: 'center',
-    backgroundColor: 'rgba(0, 0, 0, 0.5)',
-  },
-  modalContent: {
     width: '80%',
     backgroundColor: 'white',
     borderRadius: 10,
     padding: 20,
     alignItems: 'center',
     shadowColor: '#000',
-    shadowOffset: {
-      width: 0,
-      height: 2
-    },
+    shadowOffset: { width: 0, height: 2 },
     shadowOpacity: 0.25,
     shadowRadius: 3.84,
     elevation: 5,
@@ -360,67 +226,75 @@ const styles = StyleSheet.create({
   modalTitle: {
     fontSize: 20,
     fontWeight: 'bold',
-    marginBottom: 10,
+    marginBottom: 15,
+    color: '#333',
   },
   modalSubtitle: {
-    fontSize: 14,
+    fontSize: 16,
+    marginBottom: 20,
     color: '#666',
-    marginBottom: 20,
-    textAlign: 'center',
   },
-  optionsContainer: {
-    width: '100%',
-    marginBottom: 20,
-  },
-  optionButton: {
+  buttonContainer: {
     flexDirection: 'row',
+    justifyContent: 'space-between',
     width: '100%',
-    padding: 15,
+    marginBottom: 20,
+  },
+  platformButton: {
+    backgroundColor: '#6200ee',
+    paddingVertical: 12,
+    paddingHorizontal: 30,
     borderRadius: 8,
+    flex: 0.48,
     alignItems: 'center',
-    justifyContent: 'center',
-    marginBottom: 10,
   },
-  alipayButton: {
-    backgroundColor: '#1677FF',
+  disabledButton: {
+    backgroundColor: '#A6A6A6',
   },
-  wechatButton: {
-    backgroundColor: '#07C160',
-  },
-  optionButtonText: {
+  buttonText: {
     color: 'white',
+    fontSize: 16,
     fontWeight: 'bold',
-    marginLeft: 10,
-  },
-  closeButton: {
-    paddingVertical: 10,
-    paddingHorizontal: 20,
-    borderRadius: 5,
-    borderWidth: 1,
-    borderColor: '#ccc',
-  },
-  closeButtonText: {
-    color: '#666',
-  },
-  loadingContainer: {
-    padding: 20,
-    alignItems: 'center',
   },
   loadingText: {
     marginTop: 10,
-    color: '#666',
-  },
-  instructionsContainer: {
-    width: '100%',
-    alignItems: 'center',
-  },
-  instructionText: {
+    marginBottom: 15,
     fontSize: 14,
-    color: '#333',
-    marginBottom: 10,
-    textAlign: 'left',
-    alignSelf: 'stretch',
+    color: '#666',
+    fontStyle: 'italic',
   },
+  closeButton: {
+    marginTop: 15,
+    padding: 10,
+  },
+  closeButtonText: {
+    color: '#6200ee',
+    fontSize: 16,
+  },
+  debugContainer: {
+    width: '100%',
+    marginTop: 15,
+    borderTopWidth: 1,
+    borderTopColor: '#eee',
+    paddingTop: 10,
+  },
+  debugTitle: {
+    fontSize: 14,
+    fontWeight: 'bold',
+    marginBottom: 5,
+    color: '#333',
+  },
+  logContainer: {
+    backgroundColor: '#f5f5f5',
+    padding: 8,
+    borderRadius: 5,
+    maxHeight: 150,
+  },
+  logMessage: {
+    fontSize: 12,
+    color: '#333',
+    marginBottom: 2,
+  }
 });
 
 export default ImportTransactions; 

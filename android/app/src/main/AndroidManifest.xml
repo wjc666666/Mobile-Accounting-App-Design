@@ -10,6 +10,35 @@
       android:allowBackup="false"
       android:theme="@style/AppTheme"
       android:supportsRtl="true">
+      
+      <!-- Queries section for app visibility -->
+      <queries>
+          <!-- Alipay packages -->
+          <package android:name="com.eg.android.AlipayGphone" />
+          <package android:name="hk.alipay.wallet" />
+          
+          <!-- WeChat package -->
+          <package android:name="com.tencent.mm" />
+          
+          <!-- Intent queries for URI schemes -->
+          <intent>
+              <action android:name="android.intent.action.VIEW" />
+              <data android:scheme="alipay" />
+          </intent>
+          <intent>
+              <action android:name="android.intent.action.VIEW" />
+              <data android:scheme="alipays" />
+          </intent>
+          <intent>
+              <action android:name="android.intent.action.VIEW" />
+              <data android:scheme="weixin" />
+          </intent>
+          <intent>
+              <action android:name="android.intent.action.VIEW" />
+              <data android:scheme="wechat" />
+          </intent>
+      </queries>
+      
       <activity
         android:name=".MainActivity"
         android:label="@string/app_name"
@@ -20,6 +49,14 @@
         <intent-filter>
             <action android:name="android.intent.action.MAIN" />
             <category android:name="android.intent.category.LAUNCHER" />
+        </intent-filter>
+        
+        <!-- Intent filter for custom scheme handling -->
+        <intent-filter>
+            <action android:name="android.intent.action.VIEW" />
+            <category android:name="android.intent.category.DEFAULT" />
+            <category android:name="android.intent.category.BROWSABLE" />
+            <data android:scheme="jceco" />
         </intent-filter>
       </activity>
     </application>

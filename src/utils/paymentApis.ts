@@ -16,9 +16,9 @@ export interface ImportedTransaction {
   source: 'alipay' | 'wechat';
 }
 
-// Handle deep linking schemes
-const ALIPAY_SCHEME = 'alipays://';
-const WECHAT_SCHEME = 'weixin://';
+// Handle deep linking schemes - 使用最简单的基础格式增加兼容性
+const ALIPAY_SCHEME = 'alipay://';  // 尝试简化URI
+const WECHAT_SCHEME = 'weixin://';  // 尝试简化URI
 
 // Mock API endpoints for testing (replace with real endpoints later)
 const ALIPAY_BILLS_API = 'https://api.mock-alipay.com/v2/bills';
@@ -33,8 +33,22 @@ const paymentApis = {
    */
   isAlipayInstalled: async (): Promise<boolean> => {
     try {
-      const canOpen = await Linking.canOpenURL(ALIPAY_SCHEME);
-      return canOpen;
+      console.log('Checking if Alipay is installed');
+      // 尝试多种可能的scheme格式
+      const schemes = ['alipays://', 'alipay://'];
+      
+      for (const scheme of schemes) {
+        console.log(`Checking scheme: ${scheme}`);
+        try {
+          const canOpen = await Linking.canOpenURL(scheme);
+          console.log(`${scheme} can be opened:`, canOpen);
+          if (canOpen) return true;
+        } catch (e) {
+          console.error(`Error checking ${scheme}:`, e);
+        }
+      }
+      
+      return false;
     } catch (error) {
       console.error('Failed to check if Alipay is installed:', error);
       return false;
@@ -46,8 +60,22 @@ const paymentApis = {
    */
   isWeChatInstalled: async (): Promise<boolean> => {
     try {
-      const canOpen = await Linking.canOpenURL(WECHAT_SCHEME);
-      return canOpen;
+      console.log('Checking if WeChat is installed');
+      // 尝试多种可能的scheme格式
+      const schemes = ['weixin://', 'wechat://'];
+      
+      for (const scheme of schemes) {
+        console.log(`Checking scheme: ${scheme}`);
+        try {
+          const canOpen = await Linking.canOpenURL(scheme);
+          console.log(`${scheme} can be opened:`, canOpen);
+          if (canOpen) return true;
+        } catch (e) {
+          console.error(`Error checking ${scheme}:`, e);
+        }
+      }
+      
+      return false;
     } catch (error) {
       console.error('Failed to check if WeChat is installed:', error);
       return false;
@@ -60,13 +88,26 @@ const paymentApis = {
    */
   openAlipayForAuth: async (): Promise<boolean> => {
     try {
-      // 打开支付宝账单页面
-      // 实际的支付宝账单页面URI scheme
-      const billUrl = `${ALIPAY_SCHEME}platformapi/startapp?appId=20000003`;
+      // 尝试多种可能的URI格式
+      const uris = [
+        'alipays://platformapi/startapp?appId=20000003',
+        'alipay://platformapi/startapp?appId=20000003',
+        'alipays://',
+        'alipay://'
+      ];
       
-      // 打开支付宝到账单页面
-      await Linking.openURL(billUrl);
-      return true;
+      for (const uri of uris) {
+        console.log(`Trying to open Alipay with URI: ${uri}`);
+        try {
+          await Linking.openURL(uri);
+          console.log(`Successfully opened ${uri}`);
+          return true;
+        } catch (e) {
+          console.error(`Failed to open ${uri}:`, e);
+        }
+      }
+      
+      return false;
     } catch (error) {
       console.error('Failed to open Alipay:', error);
       return false;
@@ -79,13 +120,25 @@ const paymentApis = {
    */
   openWeChatForAuth: async (): Promise<boolean> => {
     try {
-      // 打开微信到账单页面
-      // 实际的微信账单页面URI scheme
-      const billUrl = `${WECHAT_SCHEME}dl/business/?t=money/index`;
+      // 尝试多种可能的URI格式
+      const uris = [
+        'weixin://dl/business/?t=money/index',
+        'weixin://',
+        'wechat://'
+      ];
       
-      // 打开微信到账单页面
-      await Linking.openURL(billUrl);
-      return true;
+      for (const uri of uris) {
+        console.log(`Trying to open WeChat with URI: ${uri}`);
+        try {
+          await Linking.openURL(uri);
+          console.log(`Successfully opened ${uri}`);
+          return true;
+        } catch (e) {
+          console.error(`Failed to open ${uri}:`, e);
+        }
+      }
+      
+      return false;
     } catch (error) {
       console.error('Failed to open WeChat:', error);
       return false;
