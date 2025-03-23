@@ -4,18 +4,20 @@ A comprehensive mobile accounting application that helps you track income, expen
 
 ## Project Overview
 
-JCEco is a full-stack mobile application designed to provide users with a seamless financial tracking experience. The app allows users to record their income and expenses, view financial statistics, and analyze their spending habits.
+JCEco is a full-stack mobile application designed to provide users with a seamless financial tracking experience. The app allows users to record their income and expenses, view financial statistics, and analyze their spending habits. It also integrates with popular payment apps like Alipay and WeChat to import transaction data.
 
 ## Project Structure
 
 ```
 JCEco/
 ├── android/                # Android native code
+│   └── app/                # Android app configuration and native modules
 ├── ios/                    # iOS native code
 ├── src/                    # React Native frontend source code
 │   ├── components/         # Reusable UI components
 │   ├── navigation/         # Navigation configuration
-│   └── screens/            # Application screens
+│   ├── screens/            # Application screens
+│   └── utils/              # Utility functions and native module bridges
 ├── backend/                # Node.js backend
 │   ├── database/           # Database related files
 │   │   ├── alter_tables.sql  # SQL for altering tables
@@ -48,6 +50,10 @@ JCEco/
 - **JWT**: JSON Web Tokens for authentication
 - **Bcrypt**: Password hashing library
 
+### Native Integrations
+- **Native Modules**: Custom native modules for Android to launch third-party apps
+- **Deep Linking**: Integration with native payment apps via URI schemes
+
 ## Features
 
 - **User Authentication**: Register, login, and account management
@@ -55,6 +61,9 @@ JCEco/
 - **Expense Management**: Track expenses by categories
 - **Financial Statistics**: Visualize spending patterns and income sources
 - **Budget Analysis**: Analyze spending against budget goals
+- **Multi-Currency Support**: Support for USD, EUR, GBP, JPY, CNY currencies
+- **Transaction Import**: Import transactions from payment apps (Alipay and WeChat)
+- **Native App Integration**: Launch Alipay and WeChat directly from the app (Android)
 
 ## Installation and Setup
 
@@ -108,17 +117,35 @@ JCEco/
 
 2. Start Metro server:
    ```bash
-   npm start
+   npx react-native start
    ```
 
 3. Launch the application:
    ```bash
    # For Android
-   npm run android
+   npx react-native run-android
 
    # For iOS
-   npm run ios
+   npx react-native run-ios
    ```
+
+## Native Payment App Integration
+
+### Android
+The app includes native modules to interact with Alipay and WeChat on Android devices:
+
+- **AppLauncherModule**: Custom native module to launch payment apps
+- **Deep Link Handling**: Custom URI scheme support (`jceco://`) for app-to-app communication
+- **Multiple Launch Methods**: Fallback mechanisms to ensure compatibility across different device configurations
+
+### Usage
+
+The payment app integration allows users to:
+
+1. Import transaction data from Alipay and WeChat
+2. Automatically categorize imported transactions
+3. Track spending across different payment platforms
+4. Maintain a unified view of finances across multiple payment methods
 
 ## API Documentation
 
@@ -189,6 +216,29 @@ JCEco/
 - **Method**: `GET`
 - **Auth**: JWT Token Required
 
+### Transaction Import
+
+#### Import Transactions
+- **URL**: `/api/import`
+- **Method**: `POST`
+- **Auth**: JWT Token Required
+- **Body**:
+  ```json
+  {
+    "transactions": [
+      {
+        "id": "string",
+        "date": "YYYY-MM-DD",
+        "amount": "number",
+        "description": "string",
+        "category": "string",
+        "type": "income|expense",
+        "source": "alipay|wechat"
+      }
+    ]
+  }
+  ```
+
 ## Development
 
 ### Running Tests
@@ -200,6 +250,7 @@ npm test
 For debugging the React Native application:
 1. In Android Studio: Use the built-in debugger
 2. In Chrome: Use the React Native Debugger extension
+3. For native module debugging: Check Logcat in Android Studio with filter tag "AppLauncherModule"
 
 ## Contributing
 
