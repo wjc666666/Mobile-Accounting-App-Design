@@ -1,198 +1,220 @@
-# 移动记账应用
+# JCEco - Mobile Accounting Application
 
-一个功能完整的移动记账应用，包括前端和后端实现。
+A comprehensive mobile accounting application that helps you track income, expenses and manage your financial goals, built with React Native and Node.js.
 
-## 项目结构
+## Project Overview
+
+JCEco is a full-stack mobile application designed to provide users with a seamless financial tracking experience. The app allows users to record their income and expenses, view financial statistics, and analyze their spending habits.
+
+## Project Structure
 
 ```
-/
-├── frontend/           # React Native 前端
-│   └── JCEco/          # 前端项目目录
-│       ├── src/        # 源代码
-│       │   ├── components/  # 可复用组件
-│       │   ├── screens/     # 屏幕组件
-│       │   ├── navigation/  # 导航配置
-│       │   └── utils/       # 工具函数和API
-│       ├── android/    # Android 配置
-│       └── ios/        # iOS 配置
-└── backend/            # Node.js 后端
-    ├── server.js       # 服务器入口
-    ├── database.sql    # 数据库脚本
-    └── .env            # 环境变量配置
+JCEco/
+├── android/                # Android native code
+├── ios/                    # iOS native code
+├── src/                    # React Native frontend source code
+│   ├── components/         # Reusable UI components
+│   ├── navigation/         # Navigation configuration
+│   └── screens/            # Application screens
+├── backend/                # Node.js backend
+│   ├── database/           # Database related files
+│   │   ├── alter_tables.sql  # SQL for altering tables
+│   │   ├── db.js           # Database connection module
+│   │   ├── init.js         # Database initialization script
+│   │   ├── init_data.sql   # Initial data for tables
+│   │   ├── README.md       # Database documentation
+│   │   ├── run_init.bat    # Batch file for initialization
+│   │   ├── schema.sql      # Database schema
+│   │   └── setup.sql       # Setup script
+│   ├── .env                # Environment variables (not in Git)
+│   ├── package.json        # Backend dependencies
+│   └── server.js           # Express server
+└── __tests__/              # Test files
 ```
 
-## 技术栈
+## Tech Stack
 
-### 前端
-- React Native
-- React Navigation
-- React Native Paper
-- Axios
-- AsyncStorage
+### Frontend
+- **React Native**: Cross-platform mobile application framework
+- **React Navigation**: Navigation library for React Native
+- **Axios**: HTTP client for API requests
+- **AsyncStorage**: Local storage for persisting data
+- **React Native Paper**: Material Design component library
 
-### 后端
-- Node.js
-- Express.js
-- MySQL
-- JWT 认证
-- Bcrypt 密码加密
+### Backend
+- **Node.js**: JavaScript runtime
+- **Express.js**: Web framework for Node.js
+- **MySQL**: Relational database management system
+- **JWT**: JSON Web Tokens for authentication
+- **Bcrypt**: Password hashing library
 
-## 功能特性
+## Features
 
-- 用户认证（注册、登录、登出）
-- 收入记录管理
-- 支出记录管理
-- 财务概览和统计
-- 预算分析
+- **User Authentication**: Register, login, and account management
+- **Income Tracking**: Record and categorize income sources
+- **Expense Management**: Track expenses by categories
+- **Financial Statistics**: Visualize spending patterns and income sources
+- **Budget Analysis**: Analyze spending against budget goals
 
-## 安装和运行
+## Installation and Setup
 
-### 前提条件
+### Prerequisites
 - Node.js (v14+)
-- npm 或 yarn
-- MySQL 数据库
-- Android Studio (用于Android开发)
-- Xcode (用于iOS开发，仅Mac)
+- npm or yarn
+- MySQL database
+- Android Studio (for Android development)
+- Xcode (for iOS development, macOS only)
 
-### 后端设置
+### Backend Setup
 
-1. 进入后端目录
-```bash
-cd backend
-```
+1. Navigate to the backend directory:
+   ```bash
+   cd backend
+   ```
 
-2. 安装依赖
-```bash
-npm install
-```
+2. Install dependencies:
+   ```bash
+   npm install
+   ```
 
-3. 创建数据库和表
-```bash
-mysql -u root -p < database.sql
-```
+3. Set up the database:
+   ```bash
+   cd database
+   run_init.bat
+   ```
 
-4. 配置环境变量
-创建 `.env` 文件，内容如下：
-```
-DB_HOST=127.0.0.1
-DB_USER=root
-DB_PASSWORD=你的数据库密码
-DB_DATABASE=mobile_accounting_db
-JWT_SECRET=你的密钥
-PORT=5000
-```
+4. Configure environment variables:
+   Create a `.env` file in the `backend` directory with the following content:
+   ```
+   DB_HOST=127.0.0.1
+   DB_USER=your_username
+   DB_PASSWORD=your_password
+   DB_DATABASE=jceco_db
+   JWT_SECRET=your_jwt_secret
+   PORT=5000
+   ```
 
-5. 启动服务器
-```bash
-node server.js
-```
+5. Start the server:
+   ```bash
+   node server.js
+   ```
 
-### 前端设置
+### Frontend Setup
 
-1. 进入前端目录
-```bash
-cd frontend/JCEco
-```
+1. Install dependencies:
+   ```bash
+   npm install
+   ```
 
-2. 安装依赖
-```bash
-npm install
-```
+2. Start Metro server:
+   ```bash
+   npm start
+   ```
 
-3. 启动Metro服务器
-```bash
-npm start
-```
+3. Launch the application:
+   ```bash
+   # For Android
+   npm run android
 
-4. 在新的终端中运行应用
-```bash
-# 对于Android
-npm run android
+   # For iOS
+   npm run ios
+   ```
 
-# 对于iOS
-npm run ios
-```
+## API Documentation
 
-## API文档
+### Authentication
 
-### 用户认证
-
-#### 注册
-- **URL**: `/users/register`
-- **方法**: `POST`
-- **请求体**:
+#### Register
+- **URL**: `/api/users/register`
+- **Method**: `POST`
+- **Body**:
   ```json
   {
-    "username": "用户名",
-    "email": "邮箱",
-    "password": "密码"
+    "username": "string",
+    "email": "string",
+    "password": "string"
   }
   ```
 
-#### 登录
-- **URL**: `/users/login`
-- **方法**: `POST`
-- **请求体**:
+#### Login
+- **URL**: `/api/users/login`
+- **Method**: `POST`
+- **Body**:
   ```json
   {
-    "email": "邮箱",
-    "password": "密码"
+    "email": "string",
+    "password": "string"
   }
   ```
 
-### 收入管理
+### Income Management
 
-#### 添加收入
-- **URL**: `/income`
-- **方法**: `POST`
-- **认证**: 需要JWT令牌
-- **请求体**:
+#### Add Income
+- **URL**: `/api/income`
+- **Method**: `POST`
+- **Auth**: JWT Token Required
+- **Body**:
   ```json
   {
-    "amount": 1000,
-    "category": "Salary",
-    "date": "2023-03-01",
-    "description": "月薪"
+    "amount": "number",
+    "category": "string",
+    "date": "YYYY-MM-DD",
+    "description": "string"
   }
   ```
 
-#### 获取收入记录
-- **URL**: `/income`
-- **方法**: `GET`
-- **认证**: 需要JWT令牌
+#### Get Income Records
+- **URL**: `/api/income`
+- **Method**: `GET`
+- **Auth**: JWT Token Required
 
-### 支出管理
+### Expense Management
 
-#### 添加支出
-- **URL**: `/expenses`
-- **方法**: `POST`
-- **认证**: 需要JWT令牌
-- **请求体**:
+#### Add Expense
+- **URL**: `/api/expenses`
+- **Method**: `POST`
+- **Auth**: JWT Token Required
+- **Body**:
   ```json
   {
-    "amount": 100,
-    "category": "Food",
-    "date": "2023-03-05",
-    "description": "晚餐"
+    "amount": "number",
+    "category": "string",
+    "date": "YYYY-MM-DD",
+    "description": "string"
   }
   ```
 
-#### 获取支出记录
-- **URL**: `/expenses`
-- **方法**: `GET`
-- **认证**: 需要JWT令牌
+#### Get Expense Records
+- **URL**: `/api/expenses`
+- **Method**: `GET`
+- **Auth**: JWT Token Required
 
-### 预算分析
+## Development
 
-#### 获取预算分析
-- **URL**: `/budget/analysis`
-- **方法**: `GET`
-- **认证**: 需要JWT令牌
+### Running Tests
+```bash
+npm test
+```
 
-## 贡献
+### Debugging
+For debugging the React Native application:
+1. In Android Studio: Use the built-in debugger
+2. In Chrome: Use the React Native Debugger extension
 
-欢迎提交问题和拉取请求。
+## Contributing
 
-## 许可证
+1. Fork the repository
+2. Create your feature branch (`git checkout -b feature/amazing-feature`)
+3. Commit your changes (`git commit -m 'Add some amazing feature'`)
+4. Push to the branch (`git push origin feature/amazing-feature`)
+5. Open a Pull Request
 
-MIT
+## License
+
+This project is licensed under the MIT License - see the LICENSE file for details.
+
+## Acknowledgments
+
+- React Native community
+- Express.js community
+- All contributors who have helped to improve this project
