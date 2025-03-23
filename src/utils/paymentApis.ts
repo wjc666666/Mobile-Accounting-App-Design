@@ -16,10 +16,6 @@ export interface ImportedTransaction {
   source: 'alipay' | 'wechat';
 }
 
-// Handle deep linking schemes - 使用最简单的基础格式增加兼容性
-const ALIPAY_SCHEME = 'alipay://';  // 尝试简化URI
-const WECHAT_SCHEME = 'weixin://';  // 尝试简化URI
-
 // Mock API endpoints for testing (replace with real endpoints later)
 const ALIPAY_BILLS_API = 'https://api.mock-alipay.com/v2/bills';
 const WECHAT_BILLS_API = 'https://api.mock-wechat.com/v2/bills';
@@ -90,23 +86,49 @@ const paymentApis = {
     try {
       // 尝试多种可能的URI格式
       const uris = [
+        // Standard URI schemes
         'alipays://platformapi/startapp?appId=20000003',
         'alipay://platformapi/startapp?appId=20000003',
+        
+        // Basic schemes
         'alipays://',
-        'alipay://'
+        'alipay://',
+        
+        // Android Intent URIs (more explicit for Android)
+        'intent://platformapi/startapp?appId=20000003#Intent;scheme=alipay;package=com.eg.android.AlipayGphone;end',
+        'intent:#Intent;scheme=alipay;package=com.eg.android.AlipayGphone;end',
+        
+        // Hong Kong variant
+        'intent:#Intent;scheme=alipay;package=hk.alipay.wallet;end'
       ];
+      
+      console.log('Device is attempting to open Alipay');
+      console.log('Available URIs to try:', uris);
       
       for (const uri of uris) {
         console.log(`Trying to open Alipay with URI: ${uri}`);
         try {
-          await Linking.openURL(uri);
-          console.log(`Successfully opened ${uri}`);
-          return true;
+          // Check if we can open this URI first
+          const canOpen = await Linking.canOpenURL(uri);
+          console.log(`Can open ${uri}: ${canOpen}`);
+          
+          if (canOpen) {
+            console.log(`Opening ${uri}...`);
+            await Linking.openURL(uri);
+            console.log(`Successfully opened ${uri}`);
+            return true;
+          } else {
+            console.log(`Cannot open ${uri}, skipping to next URI`);
+          }
         } catch (e) {
-          console.error(`Failed to open ${uri}:`, e);
+          console.error(`Error with ${uri}:`, e);
+          if (e instanceof Error) {
+            console.error(`Error name: ${e.name}, message: ${e.message}`);
+          }
         }
       }
       
+      console.error('All URI attempts failed');
       return false;
     } catch (error) {
       console.error('Failed to open Alipay:', error);
@@ -122,22 +144,45 @@ const paymentApis = {
     try {
       // 尝试多种可能的URI格式
       const uris = [
+        // Standard URI schemes
         'weixin://dl/business/?t=money/index',
+        
+        // Basic schemes
         'weixin://',
-        'wechat://'
+        'wechat://',
+        
+        // Android Intent URIs (more explicit for Android)
+        'intent://dl/business/?t=money/index#Intent;scheme=weixin;package=com.tencent.mm;end',
+        'intent:#Intent;scheme=weixin;package=com.tencent.mm;end'
       ];
+      
+      console.log('Device is attempting to open WeChat');
+      console.log('Available URIs to try:', uris);
       
       for (const uri of uris) {
         console.log(`Trying to open WeChat with URI: ${uri}`);
         try {
-          await Linking.openURL(uri);
-          console.log(`Successfully opened ${uri}`);
-          return true;
+          // Check if we can open this URI first
+          const canOpen = await Linking.canOpenURL(uri);
+          console.log(`Can open ${uri}: ${canOpen}`);
+          
+          if (canOpen) {
+            console.log(`Opening ${uri}...`);
+            await Linking.openURL(uri);
+            console.log(`Successfully opened ${uri}`);
+            return true;
+          } else {
+            console.log(`Cannot open ${uri}, skipping to next URI`);
+          }
         } catch (e) {
-          console.error(`Failed to open ${uri}:`, e);
+          console.error(`Error with ${uri}:`, e);
+          if (e instanceof Error) {
+            console.error(`Error name: ${e.name}, message: ${e.message}`);
+          }
         }
       }
       
+      console.error('All URI attempts failed');
       return false;
     } catch (error) {
       console.error('Failed to open WeChat:', error);

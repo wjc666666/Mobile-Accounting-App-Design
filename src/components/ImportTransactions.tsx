@@ -1,5 +1,5 @@
 import React, { useState, useCallback, useEffect } from 'react';
-import { View, StyleSheet, TouchableOpacity, Modal, Text, Alert, TouchableWithoutFeedback, Platform } from 'react-native';
+import { View, StyleSheet, TouchableOpacity, Modal, Text, Alert, TouchableWithoutFeedback, Platform, Linking } from 'react-native';
 import Ionicons from 'react-native-vector-icons/Ionicons';
 import paymentApis from '../utils/paymentApis';
 
@@ -11,6 +11,165 @@ const ImportTransactions: React.FC<ImportTransactionsProps> = ({ onImportSuccess
   const [modalVisible, setModalVisible] = useState(false);
   const [isImporting, setIsImporting] = useState(false);
   const [logMessages, setLogMessages] = useState<string[]>([]);
+  
+  const addLogMessage = useCallback((message: string) => {
+    setLogMessages(prev => [...prev, `${new Date().toLocaleTimeString()}: ${message}`]);
+  }, []);
+  
+  const openImportModal = useCallback(() => {
+    console.log('Opening import modal');
+    setModalVisible(true);
+    setLogMessages([]);
+  }, []);
+
+  const closeModal = useCallback(() => {
+    console.log('Closing import modal');
+    setModalVisible(false);
+  }, []);
+  
+  // Alternative approach to open external apps
+  const tryAlternativeOpen = useCallback(async (platform: 'alipay' | 'wechat'): Promise<boolean> => {
+    try {
+      const url = platform === 'alipay'
+        ? 'alipays://platformapi/startapp?appId=20000003'
+        : 'weixin://dl/business/?t=money/index';
+      
+      addLogMessage(`Trying direct alternative approach with URL: ${url}`);
+      
+      // Try with direct Linking
+      try {
+        const canOpen = await Linking.canOpenURL(url);
+        addLogMessage(`Can open URL (alternative check): ${canOpen}`);
+        
+        if (canOpen) {
+          await Linking.openURL(url);
+          return true;
+        }
+      } catch (e) {
+        addLogMessage(`Direct Linking failed: ${e}`);
+      }
+      
+      // Try with a more basic URL
+      const basicUrl = platform === 'alipay' ? 'alipay://' : 'weixin://';
+      addLogMessage(`Trying with basic URL: ${basicUrl}`);
+      
+      try {
+        const canOpenBasic = await Linking.canOpenURL(basicUrl);
+        addLogMessage(`Can open basic URL: ${canOpenBasic}`);
+        
+        if (canOpenBasic) {
+          await Linking.openURL(basicUrl);
+          return true;
+        }
+      } catch (e) {
+        addLogMessage(`Basic URL approach failed: ${e}`);
+      }
+      
+      // For Android, try the package manager approach if available
+      if (Platform.OS === 'android') {
+        const packageName = platform === 'alipay' 
+          ? 'com.eg.android.AlipayGphone' 
+          : 'com.tencent.mm';
+          
+        addLogMessage(`Trying to launch package directly: ${packageName}`);
+        
+        try {
+          // This would require a native module integration
+          // For demonstration, we'll just try an intent URL
+          const intentUrl = `intent:#Intent;component=${packageName}/.ui.LauncherUI;end`;
+          await Linking.openURL(intentUrl);
+          return true;
+        } catch (e) {
+          addLogMessage(`Package launch failed: ${e}`);
+        }
+      }
+      
+      return false;
+    } catch (error) {
+      addLogMessage(`Alternative open failed: ${error}`);
+      return false;
+    }
+  }, [addLogMessage]);
+  
+  const handleImport = useCallback(async (platform: 'alipay' | 'wechat') => {
+    console.log(`Attempting to import from ${platform}`);
+    addLogMessage(`Attempting to import from ${platform}`);
+    setIsImporting(true);
+    
+    try {
+      // Check if the app is installed first
+      const isInstalled = platform === 'alipay' 
+        ? await paymentApis.isAlipayInstalled()
+        : await paymentApis.isWeChatInstalled();
+      
+      addLogMessage(`${platform === 'alipay' ? 'Alipay' : 'WeChat'} installed: ${isInstalled}`);
+      
+      if (!isInstalled) {
+        addLogMessage(`${platform === 'alipay' ? 'Alipay' : 'WeChat'} not installed or not detectable`);
+        // Continue anyway, as the detection might fail but the app could still open
+        Alert.alert(
+          'App Detection Issue', 
+          `${platform === 'alipay' ? 'Alipay' : 'WeChat'} couldn't be detected, but we'll try to open it anyway.`,
+          [{ text: 'Continue' }]
+        );
+      }
+      
+      // Try to open the app
+      addLogMessage(`Attempting to open ${platform}...`);
+      const success = platform === 'alipay'
+        ? await paymentApis.openAlipayForAuth()
+        : await paymentApis.openWeChatForAuth();
+      
+      addLogMessage(`Open ${platform} result: ${success}`);
+      
+      if (success) {
+        addLogMessage(`Successfully opened ${platform}`);
+        
+        // Simulate successful import with mock data
+        setTimeout(() => {
+          addLogMessage(`Simulating successful import`);
+          setModalVisible(false);
+          if (onImportSuccess) {
+            onImportSuccess();
+          }
+        }, 1000);
+      } else {
+        addLogMessage(`Standard methods failed to open ${platform}, trying alternative approaches...`);
+        
+        // Try an alternative approach by creating a button with a direct link
+        const alternativeSuccess = await tryAlternativeOpen(platform);
+        
+        if (alternativeSuccess) {
+          addLogMessage(`Alternative method successfully opened ${platform}`);
+          // Simulate successful import with mock data
+          setTimeout(() => {
+            addLogMessage(`Simulating successful import`);
+            setModalVisible(false);
+            if (onImportSuccess) {
+              onImportSuccess();
+            }
+          }, 1000);
+        } else {
+          addLogMessage(`All methods failed to open ${platform}`);
+          Alert.alert(
+            'Error Opening App',
+            `Failed to open ${platform === 'alipay' ? 'Alipay' : 'WeChat'}. Please make sure the app is installed and try again.`,
+            [{ text: 'OK' }]
+          );
+        }
+      }
+    } catch (error) {
+      console.error(`Error importing from ${platform}:`, error);
+      addLogMessage(`Error: ${error}`);
+      Alert.alert(
+        'Import Error',
+        `An error occurred while trying to import from ${platform === 'alipay' ? 'Alipay' : 'WeChat'}.`,
+        [{ text: 'OK' }]
+      );
+    } finally {
+      setIsImporting(false);
+    }
+  }, [onImportSuccess, tryAlternativeOpen, addLogMessage]);
   
   useEffect(() => {
     console.log('ImportTransactions component mounted/updated');
@@ -31,85 +190,7 @@ const ImportTransactions: React.FC<ImportTransactionsProps> = ({ onImportSuccess
     };
     
     checkAppsInstalled();
-  }, []);
-  
-  const addLogMessage = (message: string) => {
-    setLogMessages(prev => [...prev, `${new Date().toLocaleTimeString()}: ${message}`]);
-  };
-  
-  const openImportModal = useCallback(() => {
-    console.log('Opening import modal');
-    setModalVisible(true);
-    setLogMessages([]);
-  }, []);
-
-  const closeModal = useCallback(() => {
-    console.log('Closing import modal');
-    setModalVisible(false);
-  }, []);
-
-  const handleImport = useCallback(async (platform: 'alipay' | 'wechat') => {
-    console.log(`Attempting to import from ${platform}`);
-    addLogMessage(`Attempting to import from ${platform}`);
-    setIsImporting(true);
-    
-    try {
-      // Check if the app is installed first
-      const isInstalled = platform === 'alipay' 
-        ? await paymentApis.isAlipayInstalled()
-        : await paymentApis.isWeChatInstalled();
-      
-      addLogMessage(`${platform === 'alipay' ? 'Alipay' : 'WeChat'} installed: ${isInstalled}`);
-      
-      if (!isInstalled) {
-        addLogMessage(`${platform === 'alipay' ? 'Alipay' : 'WeChat'} not installed`);
-        Alert.alert(
-          'App Not Installed', 
-          `${platform === 'alipay' ? 'Alipay' : 'WeChat'} is not installed on your device.`,
-          [{ text: 'OK' }]
-        );
-        setIsImporting(false);
-        return;
-      }
-      
-      // Try to open the app
-      const success = platform === 'alipay'
-        ? await paymentApis.openAlipayForAuth()
-        : await paymentApis.openWeChatForAuth();
-      
-      addLogMessage(`Open ${platform} result: ${success}`);
-      
-      if (success) {
-        addLogMessage(`Successfully opened ${platform}`);
-        
-        // Simulate successful import with mock data
-        setTimeout(() => {
-          addLogMessage(`Simulating successful import`);
-          setModalVisible(false);
-          if (onImportSuccess) {
-            onImportSuccess();
-          }
-        }, 1000);
-      } else {
-        addLogMessage(`Failed to open ${platform}`);
-        Alert.alert(
-          'Error Opening App',
-          `Failed to open ${platform === 'alipay' ? 'Alipay' : 'WeChat'}. Please make sure the app is installed and try again.`,
-          [{ text: 'OK' }]
-        );
-      }
-    } catch (error) {
-      console.error(`Error importing from ${platform}:`, error);
-      addLogMessage(`Error: ${error}`);
-      Alert.alert(
-        'Import Error',
-        `An error occurred while trying to import from ${platform === 'alipay' ? 'Alipay' : 'WeChat'}.`,
-        [{ text: 'OK' }]
-      );
-    } finally {
-      setIsImporting(false);
-    }
-  }, [onImportSuccess]);
+  }, [addLogMessage]);
 
   return (
     <View style={styles.container} pointerEvents="box-none">
