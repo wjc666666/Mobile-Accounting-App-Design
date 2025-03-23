@@ -105,21 +105,16 @@ const paymentApis = {
       console.log('Device is attempting to open Alipay');
       console.log('Available URIs to try:', uris);
       
+      // Skip the canOpenURL check which seems to be failing
+      // and directly try to open each URI
       for (const uri of uris) {
-        console.log(`Trying to open Alipay with URI: ${uri}`);
+        console.log(`Directly trying to open Alipay with URI: ${uri}`);
         try {
-          // Check if we can open this URI first
-          const canOpen = await Linking.canOpenURL(uri);
-          console.log(`Can open ${uri}: ${canOpen}`);
-          
-          if (canOpen) {
-            console.log(`Opening ${uri}...`);
-            await Linking.openURL(uri);
-            console.log(`Successfully opened ${uri}`);
-            return true;
-          } else {
-            console.log(`Cannot open ${uri}, skipping to next URI`);
-          }
+          await Linking.openURL(uri);
+          console.log(`Call to openURL with ${uri} did not throw an error`);
+          // Wait a bit to see if the app opens
+          await new Promise(resolve => setTimeout(resolve, 500));
+          return true;
         } catch (e) {
           console.error(`Error with ${uri}:`, e);
           if (e instanceof Error) {
@@ -159,21 +154,16 @@ const paymentApis = {
       console.log('Device is attempting to open WeChat');
       console.log('Available URIs to try:', uris);
       
+      // Skip the canOpenURL check which seems to be failing
+      // and directly try to open each URI
       for (const uri of uris) {
-        console.log(`Trying to open WeChat with URI: ${uri}`);
+        console.log(`Directly trying to open WeChat with URI: ${uri}`);
         try {
-          // Check if we can open this URI first
-          const canOpen = await Linking.canOpenURL(uri);
-          console.log(`Can open ${uri}: ${canOpen}`);
-          
-          if (canOpen) {
-            console.log(`Opening ${uri}...`);
-            await Linking.openURL(uri);
-            console.log(`Successfully opened ${uri}`);
-            return true;
-          } else {
-            console.log(`Cannot open ${uri}, skipping to next URI`);
-          }
+          await Linking.openURL(uri);
+          console.log(`Call to openURL with ${uri} did not throw an error`);
+          // Wait a bit to see if the app opens
+          await new Promise(resolve => setTimeout(resolve, 500));
+          return true;
         } catch (e) {
           console.error(`Error with ${uri}:`, e);
           if (e instanceof Error) {

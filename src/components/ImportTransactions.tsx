@@ -1,254 +1,197 @@
 import React, { useState, useCallback, useEffect } from 'react';
-import { View, StyleSheet, TouchableOpacity, Modal, Text, Alert, TouchableWithoutFeedback, Platform, Linking } from 'react-native';
-import Ionicons from 'react-native-vector-icons/Ionicons';
+import { View, StyleSheet, TouchableOpacity, Modal, Text, TouchableWithoutFeedback, Platform, Linking, ActivityIndicator } from 'react-native';
 import paymentApis from '../utils/paymentApis';
+import AppLauncher from '../utils/AppLauncher';
 
 interface ImportTransactionsProps {
   onImportSuccess?: () => void;
 }
 
-const ImportTransactions: React.FC<ImportTransactionsProps> = ({ onImportSuccess }) => {
+const ImportTransactions: React.FC<ImportTransactionsProps> = ({ onImportSuccess: _onImportSuccess }) => {
   const [modalVisible, setModalVisible] = useState(false);
-  const [isImporting, setIsImporting] = useState(false);
-  const [logMessages, setLogMessages] = useState<string[]>([]);
+  const [importLoading, setImportLoading] = useState(false);
+  const [debugLog, setDebugLog] = useState<string[]>([]);
   
-  const addLogMessage = useCallback((message: string) => {
-    setLogMessages(prev => [...prev, `${new Date().toLocaleTimeString()}: ${message}`]);
+  const addDebugLog = useCallback((message: string) => {
+    console.log(`DEBUG: ${message}`);
+    setDebugLog(prev => [...prev, `${new Date().toISOString().substr(11, 8)}: ${message}`]);
   }, []);
+  
+  useEffect(() => {
+    console.log('ImportTransactions component mounted/updated');
+    addDebugLog('Component ready');
+  }, [addDebugLog]);
   
   const openImportModal = useCallback(() => {
     console.log('Opening import modal');
     setModalVisible(true);
-    setLogMessages([]);
-  }, []);
+    setDebugLog([]);
+    addDebugLog('Modal opened');
+  }, [addDebugLog]);
 
   const closeModal = useCallback(() => {
     console.log('Closing import modal');
     setModalVisible(false);
+    setImportLoading(false);
   }, []);
   
-  // Alternative approach to open external apps
-  const tryAlternativeOpen = useCallback(async (platform: 'alipay' | 'wechat'): Promise<boolean> => {
+  const handleImportAlipay = useCallback(async () => {
     try {
-      const url = platform === 'alipay'
-        ? 'alipays://platformapi/startapp?appId=20000003'
-        : 'weixin://dl/business/?t=money/index';
+      addDebugLog('Starting Alipay import...');
+      setImportLoading(true);
       
-      addLogMessage(`Trying direct alternative approach with URL: ${url}`);
-      
-      // Try with direct Linking
-      try {
-        const canOpen = await Linking.canOpenURL(url);
-        addLogMessage(`Can open URL (alternative check): ${canOpen}`);
-        
-        if (canOpen) {
-          await Linking.openURL(url);
-          return true;
-        }
-      } catch (e) {
-        addLogMessage(`Direct Linking failed: ${e}`);
-      }
-      
-      // Try with a more basic URL
-      const basicUrl = platform === 'alipay' ? 'alipay://' : 'weixin://';
-      addLogMessage(`Trying with basic URL: ${basicUrl}`);
-      
-      try {
-        const canOpenBasic = await Linking.canOpenURL(basicUrl);
-        addLogMessage(`Can open basic URL: ${canOpenBasic}`);
-        
-        if (canOpenBasic) {
-          await Linking.openURL(basicUrl);
-          return true;
-        }
-      } catch (e) {
-        addLogMessage(`Basic URL approach failed: ${e}`);
-      }
-      
-      // For Android, try the package manager approach if available
+      // Try using our native module first
       if (Platform.OS === 'android') {
-        const packageName = platform === 'alipay' 
-          ? 'com.eg.android.AlipayGphone' 
-          : 'com.tencent.mm';
-          
-        addLogMessage(`Trying to launch package directly: ${packageName}`);
-        
+        addDebugLog('Trying direct launch via native module...');
         try {
-          // This would require a native module integration
-          // For demonstration, we'll just try an intent URL
-          const intentUrl = `intent:#Intent;component=${packageName}/.ui.LauncherUI;end`;
-          await Linking.openURL(intentUrl);
-          return true;
-        } catch (e) {
-          addLogMessage(`Package launch failed: ${e}`);
-        }
-      }
-      
-      return false;
-    } catch (error) {
-      addLogMessage(`Alternative open failed: ${error}`);
-      return false;
-    }
-  }, [addLogMessage]);
-  
-  const handleImport = useCallback(async (platform: 'alipay' | 'wechat') => {
-    console.log(`Attempting to import from ${platform}`);
-    addLogMessage(`Attempting to import from ${platform}`);
-    setIsImporting(true);
-    
-    try {
-      // Check if the app is installed first
-      const isInstalled = platform === 'alipay' 
-        ? await paymentApis.isAlipayInstalled()
-        : await paymentApis.isWeChatInstalled();
-      
-      addLogMessage(`${platform === 'alipay' ? 'Alipay' : 'WeChat'} installed: ${isInstalled}`);
-      
-      if (!isInstalled) {
-        addLogMessage(`${platform === 'alipay' ? 'Alipay' : 'WeChat'} not installed or not detectable`);
-        // Continue anyway, as the detection might fail but the app could still open
-        Alert.alert(
-          'App Detection Issue', 
-          `${platform === 'alipay' ? 'Alipay' : 'WeChat'} couldn't be detected, but we'll try to open it anyway.`,
-          [{ text: 'Continue' }]
-        );
-      }
-      
-      // Try to open the app
-      addLogMessage(`Attempting to open ${platform}...`);
-      const success = platform === 'alipay'
-        ? await paymentApis.openAlipayForAuth()
-        : await paymentApis.openWeChatForAuth();
-      
-      addLogMessage(`Open ${platform} result: ${success}`);
-      
-      if (success) {
-        addLogMessage(`Successfully opened ${platform}`);
-        
-        // Simulate successful import with mock data
-        setTimeout(() => {
-          addLogMessage(`Simulating successful import`);
-          setModalVisible(false);
-          if (onImportSuccess) {
-            onImportSuccess();
+          const opened = await AppLauncher.openAlipay();
+          addDebugLog(`Native module result: ${opened ? 'SUCCESS' : 'FAILED'}`);
+          if (opened) {
+            return;
           }
-        }, 1000);
-      } else {
-        addLogMessage(`Standard methods failed to open ${platform}, trying alternative approaches...`);
-        
-        // Try an alternative approach by creating a button with a direct link
-        const alternativeSuccess = await tryAlternativeOpen(platform);
-        
-        if (alternativeSuccess) {
-          addLogMessage(`Alternative method successfully opened ${platform}`);
-          // Simulate successful import with mock data
-          setTimeout(() => {
-            addLogMessage(`Simulating successful import`);
-            setModalVisible(false);
-            if (onImportSuccess) {
-              onImportSuccess();
-            }
-          }, 1000);
-        } else {
-          addLogMessage(`All methods failed to open ${platform}`);
-          Alert.alert(
-            'Error Opening App',
-            `Failed to open ${platform === 'alipay' ? 'Alipay' : 'WeChat'}. Please make sure the app is installed and try again.`,
-            [{ text: 'OK' }]
-          );
+        } catch (error) {
+          addDebugLog(`Native module error: ${error instanceof Error ? error.message : String(error)}`);
         }
+        
+        addDebugLog('Native module failed, falling back to URI scheme...');
+      }
+      
+      // Fall back to the original URI method
+      try {
+        const success = await paymentApis.openAlipayForAuth();
+        addDebugLog(`URI scheme result: ${success ? 'SUCCESS' : 'FAILED'}`);
+      } catch (error) {
+        addDebugLog(`URI scheme error: ${error instanceof Error ? error.message : String(error)}`);
       }
     } catch (error) {
-      console.error(`Error importing from ${platform}:`, error);
-      addLogMessage(`Error: ${error}`);
-      Alert.alert(
-        'Import Error',
-        `An error occurred while trying to import from ${platform === 'alipay' ? 'Alipay' : 'WeChat'}.`,
-        [{ text: 'OK' }]
-      );
-    } finally {
-      setIsImporting(false);
+      addDebugLog(`Global error: ${error instanceof Error ? error.message : String(error)}`);
+      console.error('Failed to open Alipay:', error);
     }
-  }, [onImportSuccess, tryAlternativeOpen, addLogMessage]);
-  
-  useEffect(() => {
-    console.log('ImportTransactions component mounted/updated');
-    
-    // Check if the apps are installed on component mount
-    const checkAppsInstalled = async () => {
-      try {
-        const alipayInstalled = await paymentApis.isAlipayInstalled();
-        const wechatInstalled = await paymentApis.isWeChatInstalled();
-        console.log('Alipay installed:', alipayInstalled);
-        console.log('WeChat installed:', wechatInstalled);
-        addLogMessage(`Alipay installed: ${alipayInstalled}`);
-        addLogMessage(`WeChat installed: ${wechatInstalled}`);
-      } catch (error) {
-        console.error('Error checking apps:', error);
-        addLogMessage(`Error checking apps: ${error}`);
+  }, [addDebugLog]);
+
+  const handleImportWeChat = useCallback(async () => {
+    try {
+      addDebugLog('Starting WeChat import...');
+      setImportLoading(true);
+      
+      // Try using our native module first
+      if (Platform.OS === 'android') {
+        addDebugLog('Trying direct launch via native module...');
+        try {
+          const opened = await AppLauncher.openWeChat();
+          addDebugLog(`Native module result: ${opened ? 'SUCCESS' : 'FAILED'}`);
+          if (opened) {
+            return;
+          }
+        } catch (error) {
+          addDebugLog(`Native module error: ${error instanceof Error ? error.message : String(error)}`);
+        }
+        
+        addDebugLog('Native module failed, falling back to URI scheme...');
       }
-    };
-    
-    checkAppsInstalled();
-  }, [addLogMessage]);
+      
+      // Fall back to the original URI method
+      try {
+        const success = await paymentApis.openWeChatForAuth();
+        addDebugLog(`URI scheme result: ${success ? 'SUCCESS' : 'FAILED'}`);
+      } catch (error) {
+        addDebugLog(`URI scheme error: ${error instanceof Error ? error.message : String(error)}`);
+      }
+    } catch (error) {
+      addDebugLog(`Global error: ${error instanceof Error ? error.message : String(error)}`);
+      console.error('Failed to open WeChat:', error);
+    }
+  }, [addDebugLog]);
+
+  const tryDirectLinking = useCallback(async (uri: string, appName: string) => {
+    try {
+      addDebugLog(`Trying to open ${appName} with direct Linking: ${uri}`);
+      await Linking.openURL(uri);
+      addDebugLog(`${appName} direct linking attempt succeeded`);
+      return true;
+    } catch (error) {
+      addDebugLog(`${appName} direct linking failed: ${error instanceof Error ? error.message : String(error)}`);
+      return false;
+    }
+  }, [addDebugLog]);
 
   return (
     <View style={styles.container} pointerEvents="box-none">
       <TouchableOpacity
         style={styles.importButton}
         onPress={openImportModal}
-        activeOpacity={0.7}
-        hitSlop={{ top: 10, bottom: 10, left: 10, right: 10 }}
+        hitSlop={{ top: 20, bottom: 20, left: 20, right: 20 }}
       >
-        <Ionicons name="download-outline" size={24} color="#fff" />
+        <Text style={styles.importButtonText}>Import</Text>
       </TouchableOpacity>
 
       <Modal
-        animationType="slide"
+        animationType="fade"
         transparent={true}
         visible={modalVisible}
         onRequestClose={closeModal}
       >
         <TouchableWithoutFeedback onPress={closeModal}>
-          <View style={styles.modalBackground}>
-            <TouchableWithoutFeedback onPress={(e) => e.stopPropagation()}>
-              <View style={styles.modalContainer}>
+          <View style={styles.modalOverlay}>
+            <TouchableWithoutFeedback onPress={e => e.stopPropagation()}>
+              <View style={styles.modalContent}>
                 <Text style={styles.modalTitle}>Import Transactions</Text>
-                <Text style={styles.modalSubtitle}>Select Platform:</Text>
-                
+                <Text style={styles.modalText}>
+                  Choose a service to import your transactions from:
+                </Text>
+
                 <View style={styles.buttonContainer}>
                   <TouchableOpacity
-                    style={[styles.platformButton, isImporting && styles.disabledButton]}
-                    onPress={() => handleImport('alipay')}
-                    disabled={isImporting}
+                    style={[styles.serviceButton, styles.alipayButton]}
+                    onPress={handleImportAlipay}
+                    disabled={importLoading}
                   >
-                    <Text style={styles.buttonText}>Alipay</Text>
+                    <Text style={styles.serviceButtonText}>Alipay</Text>
                   </TouchableOpacity>
                   
                   <TouchableOpacity
-                    style={[styles.platformButton, isImporting && styles.disabledButton]}
-                    onPress={() => handleImport('wechat')}
-                    disabled={isImporting}
+                    style={[styles.serviceButton, styles.wechatButton]}
+                    onPress={handleImportWeChat}
+                    disabled={importLoading}
                   >
-                    <Text style={styles.buttonText}>WeChat</Text>
+                    <Text style={styles.serviceButtonText}>WeChat</Text>
                   </TouchableOpacity>
                 </View>
-                
-                {isImporting && (
-                  <Text style={styles.loadingText}>Connecting to payment platform...</Text>
+
+                {importLoading && (
+                  <View style={styles.loadingContainer}>
+                    <ActivityIndicator size="large" color="#0000ff" />
+                    <Text style={styles.loadingText}>Attempting to launch app...</Text>
+                  </View>
                 )}
-                
+
                 {Platform.OS === 'android' && (
                   <View style={styles.debugContainer}>
                     <Text style={styles.debugTitle}>Debug Log:</Text>
-                    <View style={styles.logContainer}>
-                      {logMessages.map((msg, index) => (
-                        <Text key={index} style={styles.logMessage}>{msg}</Text>
+                    <View style={styles.debugLogContainer}>
+                      {debugLog.map((log, index) => (
+                        <Text key={index} style={styles.debugLogText}>{log}</Text>
                       ))}
+                    </View>
+                    
+                    <View style={styles.directLinkContainer}>
+                      <TouchableOpacity
+                        style={styles.directLinkButton}
+                        onPress={() => tryDirectLinking('alipays://', 'Alipay')}
+                      >
+                        <Text style={styles.directLinkButtonText}>Open Alipay Directly</Text>
+                      </TouchableOpacity>
+                      
+                      <TouchableOpacity
+                        style={styles.directLinkButton}
+                        onPress={() => tryDirectLinking('weixin://', 'WeChat')}
+                      >
+                        <Text style={styles.directLinkButtonText}>Open WeChat Directly</Text>
+                      </TouchableOpacity>
                     </View>
                   </View>
                 )}
-                
+
                 <TouchableOpacity
                   style={styles.closeButton}
                   onPress={closeModal}
@@ -273,9 +216,9 @@ const styles = StyleSheet.create({
   },
   importButton: {
     backgroundColor: '#6200ee',
-    width: 40,
-    height: 40,
-    borderRadius: 20,
+    width: 60,
+    height: 30,
+    borderRadius: 15,
     justifyContent: 'center',
     alignItems: 'center',
     marginRight: 10,
@@ -286,14 +229,19 @@ const styles = StyleSheet.create({
     shadowOpacity: 0.2,
     shadowRadius: 3,
   },
-  modalBackground: {
+  importButtonText: {
+    color: 'white',
+    fontSize: 14,
+    fontWeight: 'bold',
+  },
+  modalOverlay: {
     flex: 1,
     backgroundColor: 'rgba(0, 0, 0, 0.5)',
     justifyContent: 'center',
     alignItems: 'center',
   },
-  modalContainer: {
-    width: '80%',
+  modalContent: {
+    width: '85%',
     backgroundColor: 'white',
     borderRadius: 10,
     padding: 20,
@@ -303,6 +251,7 @@ const styles = StyleSheet.create({
     shadowOpacity: 0.25,
     shadowRadius: 3.84,
     elevation: 5,
+    maxHeight: '80%',
   },
   modalTitle: {
     fontSize: 20,
@@ -310,10 +259,11 @@ const styles = StyleSheet.create({
     marginBottom: 15,
     color: '#333',
   },
-  modalSubtitle: {
+  modalText: {
     fontSize: 16,
     marginBottom: 20,
     color: '#666',
+    textAlign: 'center',
   },
   buttonContainer: {
     flexDirection: 'row',
@@ -321,28 +271,80 @@ const styles = StyleSheet.create({
     width: '100%',
     marginBottom: 20,
   },
-  platformButton: {
-    backgroundColor: '#6200ee',
+  serviceButton: {
     paddingVertical: 12,
-    paddingHorizontal: 30,
+    paddingHorizontal: 20,
     borderRadius: 8,
     flex: 0.48,
     alignItems: 'center',
+    justifyContent: 'center',
   },
-  disabledButton: {
-    backgroundColor: '#A6A6A6',
+  alipayButton: {
+    backgroundColor: '#00a0e9',
   },
-  buttonText: {
+  wechatButton: {
+    backgroundColor: '#4CAF50',
+  },
+  serviceButtonText: {
     color: 'white',
     fontSize: 16,
     fontWeight: 'bold',
   },
+  loadingContainer: {
+    alignItems: 'center',
+    marginVertical: 10,
+  },
   loadingText: {
     marginTop: 10,
-    marginBottom: 15,
+    marginBottom: 5,
     fontSize: 14,
     color: '#666',
-    fontStyle: 'italic',
+  },
+  debugContainer: {
+    width: '100%',
+    marginTop: 15,
+    borderTopWidth: 1,
+    borderTopColor: '#eee',
+    paddingTop: 10,
+    maxHeight: 200,
+  },
+  debugTitle: {
+    fontSize: 14,
+    fontWeight: 'bold',
+    marginBottom: 5,
+    color: '#333',
+  },
+  debugLogContainer: {
+    backgroundColor: '#f5f5f5',
+    padding: 8,
+    borderRadius: 5,
+    maxHeight: 100,
+    width: '100%',
+  },
+  debugLogText: {
+    fontSize: 12,
+    color: '#333',
+    marginBottom: 2,
+  },
+  directLinkContainer: {
+    flexDirection: 'row',
+    justifyContent: 'space-between',
+    width: '100%',
+    marginTop: 10,
+    marginBottom: 10,
+  },
+  directLinkButton: {
+    backgroundColor: '#FF5722',
+    paddingVertical: 8,
+    paddingHorizontal: 12,
+    borderRadius: 4,
+    flex: 0.48,
+    alignItems: 'center',
+  },
+  directLinkButtonText: {
+    color: 'white',
+    fontSize: 12,
+    fontWeight: 'bold',
   },
   closeButton: {
     marginTop: 15,
@@ -352,30 +354,6 @@ const styles = StyleSheet.create({
     color: '#6200ee',
     fontSize: 16,
   },
-  debugContainer: {
-    width: '100%',
-    marginTop: 15,
-    borderTopWidth: 1,
-    borderTopColor: '#eee',
-    paddingTop: 10,
-  },
-  debugTitle: {
-    fontSize: 14,
-    fontWeight: 'bold',
-    marginBottom: 5,
-    color: '#333',
-  },
-  logContainer: {
-    backgroundColor: '#f5f5f5',
-    padding: 8,
-    borderRadius: 5,
-    maxHeight: 150,
-  },
-  logMessage: {
-    fontSize: 12,
-    color: '#333',
-    marginBottom: 2,
-  }
 });
 
 export default ImportTransactions; 

@@ -116,6 +116,14 @@ dependencies {
     } else {
         implementation jscFlavor
     }
+
+    implementation "androidx.swiperefreshlayout:swiperefreshlayout:1.0.0"
+    
+    // For direct app launching support
+    implementation "androidx.browser:browser:1.3.0"
+    
+    // Vector icons
+    implementation project(':react-native-vector-icons')
 }
 
 // Add this line to include the fonts
