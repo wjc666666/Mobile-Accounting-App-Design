@@ -27,7 +27,7 @@ const WECHAT_BILLS_API = 'https://api.mock-wechat.com/v2/bills';
 /**
  * Payment APIs for importing transactions from Alipay and WeChat
  */
-export const paymentApis = {
+const paymentApis = {
   /**
    * Check if Alipay is installed on the device
    */
@@ -56,17 +56,16 @@ export const paymentApis = {
 
   /**
    * Open Alipay for bill export authorization
-   * Note: In a real implementation, this would involve a server-side component
-   * to handle OAuth, but we're simplifying the process for demonstration
+   * This uses actual Alipay URI schemes
    */
   openAlipayForAuth: async (): Promise<boolean> => {
     try {
-      // In a real app, this would be a specific URL provided by Alipay
-      // for OAuth authorization flow with your app as the redirect target
-      const authUrl = `${ALIPAY_SCHEME}platformapi/startapp?appId=20000180&url=https://your-auth-server.com/authorize/alipay`;
+      // 打开支付宝账单页面
+      // 实际的支付宝账单页面URI scheme
+      const billUrl = `${ALIPAY_SCHEME}platformapi/startapp?appId=20000003`;
       
-      // Open Alipay with the auth URL
-      await Linking.openURL(authUrl);
+      // 打开支付宝到账单页面
+      await Linking.openURL(billUrl);
       return true;
     } catch (error) {
       console.error('Failed to open Alipay:', error);
@@ -76,14 +75,16 @@ export const paymentApis = {
 
   /**
    * Open WeChat for bill export authorization
+   * This uses actual WeChat URI schemes
    */
   openWeChatForAuth: async (): Promise<boolean> => {
     try {
-      // In a real app, this would be a specific URL provided by WeChat
-      const authUrl = `${WECHAT_SCHEME}app/wxaccount/authorization?scope=snsapi_userinfo&redirect_uri=https://your-auth-server.com/authorize/wechat`;
+      // 打开微信到账单页面
+      // 实际的微信账单页面URI scheme
+      const billUrl = `${WECHAT_SCHEME}dl/business/?t=money/index`;
       
-      // Open WeChat with the auth URL
-      await Linking.openURL(authUrl);
+      // 打开微信到账单页面
+      await Linking.openURL(billUrl);
       return true;
     } catch (error) {
       console.error('Failed to open WeChat:', error);
@@ -260,37 +261,37 @@ function getMockAlipayBills(_startDate: string, _endDate: string): ImportedTrans
 function getMockWeChatBills(_startDate: string, _endDate: string): ImportedTransaction[] {
   return [
     {
-      id: 'wechat987654',
-      date: '2025-03-22',
-      amount: 45.5,
-      description: '出租车',
-      category: 'Transportation',
+      id: 'wechat123456',
+      date: '2025-03-19',
+      amount: 30.0,
+      description: '网上购物',
+      category: 'Shopping',
       type: 'expense',
       source: 'wechat'
     },
     {
-      id: 'wechat987653',
-      date: '2025-03-19',
-      amount: 88.0,
+      id: 'wechat123457',
+      date: '2025-03-17',
+      amount: 45.5,
       description: '晚餐',
       category: 'Food',
       type: 'expense',
       source: 'wechat'
     },
     {
-      id: 'wechat987652',
-      date: '2025-03-16',
-      amount: 199.9,
-      description: '衣服',
-      category: 'Shopping',
+      id: 'wechat123458',
+      date: '2025-03-14',
+      amount: 15.0,
+      description: '公交',
+      category: 'Transportation',
       type: 'expense',
       source: 'wechat'
     },
     {
-      id: 'wechat987651',
-      date: '2025-03-12',
+      id: 'wechat123459',
+      date: '2025-03-05',
       amount: 500.0,
-      description: '微信转账',
+      description: '工资',
       category: 'Income',
       type: 'income',
       source: 'wechat'

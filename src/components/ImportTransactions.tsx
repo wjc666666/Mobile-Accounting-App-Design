@@ -16,6 +16,7 @@ const ImportTransactions: React.FC<ImportTransactionsProps> = ({ onImportSuccess
   const [isModalVisible, setIsModalVisible] = useState(false);
   const [isLoading, setIsLoading] = useState(false);
   const [loadingMessage, setLoadingMessage] = useState('');
+  const [showImportInstructions, setShowImportInstructions] = useState(false);
 
   // Get the current month's start and end dates
   const getCurrentMonthDates = () => {
@@ -41,9 +42,9 @@ const ImportTransactions: React.FC<ImportTransactionsProps> = ({ onImportSuccess
       
       if (!isInstalled) {
         Alert.alert(
-          `${app === 'alipay' ? 'Alipay' : 'WeChat'} Not Found`,
-          `Please install ${app === 'alipay' ? 'Alipay' : 'WeChat'} to continue.`,
-          [{ text: 'OK' }]
+          `${app === 'alipay' ? '支付宝' : '微信'}未安装`,
+          `请安装${app === 'alipay' ? '支付宝' : '微信'}后继续。`,
+          [{ text: '确定' }]
         );
         return false;
       }
@@ -58,7 +59,7 @@ const ImportTransactions: React.FC<ImportTransactionsProps> = ({ onImportSuccess
   const importFromAlipay = async () => {
     try {
       setIsLoading(true);
-      setLoadingMessage('Checking Alipay installation...');
+      setLoadingMessage('检查支付宝安装状态...');
       
       const isInstalled = await checkAppInstallation('alipay');
       if (!isInstalled) {
@@ -66,33 +67,24 @@ const ImportTransactions: React.FC<ImportTransactionsProps> = ({ onImportSuccess
         return;
       }
       
-      setLoadingMessage('Opening Alipay for authorization...');
+      setLoadingMessage('正在打开支付宝账单页面...');
+      
+      // 打开支付宝账单页面
       const authResult = await paymentApis.openAlipayForAuth();
       
       if (!authResult) {
-        Alert.alert('Authorization Failed', 'Failed to authorize with Alipay', [{ text: 'OK' }]);
+        Alert.alert('打开失败', '无法打开支付宝应用', [{ text: '确定' }]);
         setIsLoading(false);
         return;
       }
       
-      // In a real app, you'd wait for a callback from Alipay here
-      // For demo purposes, we'll just proceed with importing bills
-      
-      setLoadingMessage('Importing bills from Alipay...');
-      const { startDate, endDate } = getCurrentMonthDates();
-      const transactions = await paymentApis.importAlipayBills(startDate, endDate);
-      
-      if (transactions.length === 0) {
-        Alert.alert('No Transactions', 'No transactions found for the current month', [{ text: 'OK' }]);
-        setIsLoading(false);
-        return;
-      }
-      
-      await saveImportedTransactions(transactions);
+      // 显示导入说明
+      setIsLoading(false);
+      setShowImportInstructions(true);
       
     } catch (error) {
       console.error('Error importing from Alipay:', error);
-      Alert.alert('Import Failed', 'Failed to import transactions from Alipay', [{ text: 'OK' }]);
+      Alert.alert('导入失败', '从支付宝导入交易记录失败', [{ text: '确定' }]);
       setIsLoading(false);
     }
   };
@@ -100,7 +92,7 @@ const ImportTransactions: React.FC<ImportTransactionsProps> = ({ onImportSuccess
   const importFromWeChat = async () => {
     try {
       setIsLoading(true);
-      setLoadingMessage('Checking WeChat installation...');
+      setLoadingMessage('检查微信安装状态...');
       
       const isInstalled = await checkAppInstallation('wechat');
       if (!isInstalled) {
@@ -108,65 +100,123 @@ const ImportTransactions: React.FC<ImportTransactionsProps> = ({ onImportSuccess
         return;
       }
       
-      setLoadingMessage('Opening WeChat for authorization...');
+      setLoadingMessage('正在打开微信账单页面...');
+      
+      // 打开微信账单页面
       const authResult = await paymentApis.openWeChatForAuth();
       
       if (!authResult) {
-        Alert.alert('Authorization Failed', 'Failed to authorize with WeChat', [{ text: 'OK' }]);
+        Alert.alert('打开失败', '无法打开微信应用', [{ text: '确定' }]);
         setIsLoading(false);
         return;
       }
       
-      // In a real app, you'd wait for a callback from WeChat here
-      
-      setLoadingMessage('Importing bills from WeChat...');
-      const { startDate, endDate } = getCurrentMonthDates();
-      const transactions = await paymentApis.importWeChatBills(startDate, endDate);
-      
-      if (transactions.length === 0) {
-        Alert.alert('No Transactions', 'No transactions found for the current month', [{ text: 'OK' }]);
-        setIsLoading(false);
-        return;
-      }
-      
-      await saveImportedTransactions(transactions);
+      // 显示导入说明
+      setIsLoading(false);
+      setShowImportInstructions(true);
       
     } catch (error) {
       console.error('Error importing from WeChat:', error);
-      Alert.alert('Import Failed', 'Failed to import transactions from WeChat', [{ text: 'OK' }]);
+      Alert.alert('导入失败', '从微信导入交易记录失败', [{ text: '确定' }]);
+      setIsLoading(false);
+    }
+  };
+
+  // 模拟导入数据（实际应用中会与真实支付平台连接）
+  const mockImportData = async () => {
+    try {
+      setIsLoading(true);
+      setLoadingMessage('正在导入交易数据...');
+      
+      // 获取当前月份的开始和结束日期
+      const { startDate, endDate } = getCurrentMonthDates();
+      
+      // 模拟从支付宝和微信导入交易记录
+      const alipayTransactions = await paymentApis.importAlipayBills(startDate, endDate);
+      const wechatTransactions = await paymentApis.importWeChatBills(startDate, endDate);
+      
+      // 合并交易记录
+      const transactions = [...alipayTransactions, ...wechatTransactions];
+      
+      if (transactions.length === 0) {
+        Alert.alert('没有交易记录', '当前月份没有找到交易记录', [{ text: '确定' }]);
+        setIsLoading(false);
+        return;
+      }
+      
+      // 保存导入的交易记录
+      await saveImportedTransactions(transactions);
+      
+    } catch (error) {
+      console.error('Error importing data:', error);
+      Alert.alert('导入失败', '导入交易记录失败', [{ text: '确定' }]);
       setIsLoading(false);
     }
   };
 
   const saveImportedTransactions = async (transactions: ImportedTransaction[]) => {
     try {
-      setLoadingMessage('Saving imported transactions...');
+      setLoadingMessage('保存导入的交易记录...');
       
       const result = await paymentApis.saveImportedTransactions(transactions);
       
       if (result.success) {
         setIsLoading(false);
         setIsModalVisible(false);
+        setShowImportInstructions(false);
         
-        // Show success message
+        // 显示成功消息
         Alert.alert(
-          'Import Successful',
-          `Successfully imported ${transactions.length} transactions`,
-          [{ text: 'OK' }]
+          '导入成功',
+          `成功导入 ${transactions.length} 条交易记录`,
+          [{ text: '确定' }]
         );
         
-        // Call the onSuccess callback
+        // 调用成功回调函数
         if (onImportSuccess && result.summary) {
           onImportSuccess(result.summary);
         }
       } else {
-        throw new Error('Failed to save transactions');
+        throw new Error('保存交易记录失败');
       }
     } catch (error) {
       console.error('Error saving imported transactions:', error);
-      Alert.alert('Save Failed', 'Failed to save imported transactions', [{ text: 'OK' }]);
+      Alert.alert('保存失败', '保存导入的交易记录失败', [{ text: '确定' }]);
       setIsLoading(false);
     }
+  };
+
+  // 导入说明界面
+  const renderImportInstructions = () => {
+    return (
+      <View style={styles.instructionsContainer}>
+        <Text style={styles.modalTitle}>导入说明</Text>
+        <Text style={styles.instructionText}>
+          1. 在支付宝/微信账单页面中，选择您需要导入的账单
+        </Text>
+        <Text style={styles.instructionText}>
+          2. 下载或导出账单到手机上
+        </Text>
+        <Text style={styles.instructionText}>
+          3. 返回本应用，点击下方"导入已选择的账单"按钮
+        </Text>
+        
+        <TouchableOpacity
+          style={[styles.optionButton, styles.importButton]}
+          onPress={mockImportData}
+        >
+          <Ionicons name="cloud-download-outline" size={24} color="white" />
+          <Text style={styles.optionButtonText}>导入已选择的账单</Text>
+        </TouchableOpacity>
+        
+        <TouchableOpacity
+          style={styles.closeButton}
+          onPress={() => setShowImportInstructions(false)}
+        >
+          <Text style={styles.closeButtonText}>取消</Text>
+        </TouchableOpacity>
+      </View>
+    );
   };
 
   return (
@@ -176,7 +226,7 @@ const ImportTransactions: React.FC<ImportTransactionsProps> = ({ onImportSuccess
         onPress={() => setIsModalVisible(true)}
       >
         <Ionicons name="cloud-download-outline" size={20} color="white" />
-        <Text style={styles.importButtonText}>Import</Text>
+        <Text style={styles.importButtonText}>导入</Text>
       </TouchableOpacity>
       
       <Modal
@@ -187,41 +237,43 @@ const ImportTransactions: React.FC<ImportTransactionsProps> = ({ onImportSuccess
       >
         <View style={styles.modalContainer}>
           <View style={styles.modalContent}>
-            <Text style={styles.modalTitle}>Import Transactions</Text>
-            <Text style={styles.modalSubtitle}>Import transactions from other payment platforms</Text>
-            
             {isLoading ? (
               <View style={styles.loadingContainer}>
                 <ActivityIndicator size="large" color="#9b59b6" />
                 <Text style={styles.loadingText}>{loadingMessage}</Text>
               </View>
+            ) : showImportInstructions ? (
+              renderImportInstructions()
             ) : (
-              <View style={styles.optionsContainer}>
-                <TouchableOpacity
-                  style={[styles.optionButton, styles.alipayButton]}
-                  onPress={importFromAlipay}
-                >
-                  <Ionicons name="logo-alipay" size={24} color="white" />
-                  <Text style={styles.optionButtonText}>Import from Alipay</Text>
-                </TouchableOpacity>
+              <>
+                <Text style={styles.modalTitle}>导入交易记录</Text>
+                <Text style={styles.modalSubtitle}>从其他支付平台导入交易记录</Text>
+                
+                <View style={styles.optionsContainer}>
+                  <TouchableOpacity
+                    style={[styles.optionButton, styles.alipayButton]}
+                    onPress={importFromAlipay}
+                  >
+                    <Ionicons name="logo-alipay" size={24} color="white" />
+                    <Text style={styles.optionButtonText}>从支付宝导入</Text>
+                  </TouchableOpacity>
+                  
+                  <TouchableOpacity
+                    style={[styles.optionButton, styles.wechatButton]}
+                    onPress={importFromWeChat}
+                  >
+                    <Ionicons name="logo-wechat" size={24} color="white" />
+                    <Text style={styles.optionButtonText}>从微信导入</Text>
+                  </TouchableOpacity>
+                </View>
                 
                 <TouchableOpacity
-                  style={[styles.optionButton, styles.wechatButton]}
-                  onPress={importFromWeChat}
+                  style={styles.closeButton}
+                  onPress={() => setIsModalVisible(false)}
                 >
-                  <Ionicons name="logo-wechat" size={24} color="white" />
-                  <Text style={styles.optionButtonText}>Import from WeChat</Text>
+                  <Text style={styles.closeButtonText}>关闭</Text>
                 </TouchableOpacity>
-              </View>
-            )}
-            
-            {!isLoading && (
-              <TouchableOpacity
-                style={styles.closeButton}
-                onPress={() => setIsModalVisible(false)}
-              >
-                <Text style={styles.closeButtonText}>Close</Text>
-              </TouchableOpacity>
+              </>
             )}
           </View>
         </View>
@@ -322,6 +374,17 @@ const styles = StyleSheet.create({
   loadingText: {
     marginTop: 10,
     color: '#666',
+  },
+  instructionsContainer: {
+    width: '100%',
+    alignItems: 'center',
+  },
+  instructionText: {
+    fontSize: 14,
+    color: '#333',
+    marginBottom: 10,
+    textAlign: 'left',
+    alignSelf: 'stretch',
   },
 });
 
