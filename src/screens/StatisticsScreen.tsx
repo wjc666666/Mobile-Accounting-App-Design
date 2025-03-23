@@ -364,19 +364,21 @@ const StatisticsScreen = () => {
       <View style={styles.header}>
         <Text style={styles.headerTitle}>Financial Statistics</Text>
         
-        {/* Direct test button */}
-        <TouchableOpacity
-          style={styles.testButton}
-          onPress={() => {
-            console.log('TEST BUTTON PRESSED');
-            Alert.alert('Test Button', 'Direct test button was pressed!');
-          }}
-        >
-          <Text style={styles.testButtonText}>Test</Text>
-        </TouchableOpacity>
-        
-        <View style={styles.importButtonContainer}>
-          <ImportTransactions onImportSuccess={fetchData} />
+        <View style={styles.buttonRow}>
+          {/* Direct test button */}
+          <TouchableOpacity
+            style={styles.testButton}
+            onPress={() => {
+              console.log('TEST BUTTON PRESSED');
+              Alert.alert('Test Button', 'Direct test button was pressed!');
+            }}
+          >
+            <Text style={styles.testButtonText}>Test</Text>
+          </TouchableOpacity>
+          
+          <View style={styles.importButtonContainer}>
+            <ImportTransactions onImportSuccess={fetchData} />
+          </View>
         </View>
       </View>
 
@@ -495,21 +497,19 @@ const styles = StyleSheet.create({
   header: {
     padding: 20,
     backgroundColor: '#9b59b6',
-    flexDirection: 'row',
-    justifyContent: 'space-between',
-    alignItems: 'center',
-    position: 'relative',
+    flexDirection: 'column',
+    alignItems: 'flex-start',
   },
   headerTitle: {
     fontSize: 24,
     fontWeight: 'bold',
     color: 'white',
-    flex: 1,
+    marginBottom: 10,
   },
-  importButtonContainer: {
-    // Special container for the import button to ensure it's clickable
-    minWidth: 100,
-    height: 40,
+  buttonRow: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    alignSelf: 'flex-end',
   },
   errorContainer: {
     margin: 15,
@@ -627,6 +627,10 @@ const styles = StyleSheet.create({
   testButtonText: {
     color: 'white',
     fontWeight: 'bold',
+  },
+  importButtonContainer: {
+    minWidth: 100,
+    height: 40,
   },
 });
 

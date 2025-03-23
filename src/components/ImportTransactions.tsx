@@ -6,8 +6,7 @@ import {
   TouchableOpacity, 
   Alert, 
   Modal, 
-  ActivityIndicator, 
-  Platform 
+  ActivityIndicator 
 } from 'react-native';
 import Ionicons from 'react-native-vector-icons/Ionicons';
 import paymentApis, { ImportedTransaction } from '../utils/paymentApis';
@@ -256,12 +255,11 @@ const ImportTransactions: React.FC<ImportTransactionsProps> = ({ onImportSuccess
       <TouchableOpacity 
         style={styles.importButton}
         onPress={() => {
-          console.log('Import button pressed');
-          Alert.alert('Button Pressed', 'Import button was pressed!');
+          console.log('Direct ImportTransactions button pressed');
+          Alert.alert('Import Button', 'Import button was pressed directly!');
           setIsModalVisible(true);
         }}
       >
-        <Ionicons name="cloud-download-outline" size={20} color="white" />
         <Text style={styles.importButtonText}>Import</Text>
       </TouchableOpacity>
       
@@ -323,28 +321,20 @@ const ImportTransactions: React.FC<ImportTransactionsProps> = ({ onImportSuccess
 
 const styles = StyleSheet.create({
   container: {
-    minWidth: 100,
-    minHeight: 40,
-    justifyContent: 'center',
+    width: 100,
+    height: 40,
   },
   importButton: {
-    flexDirection: 'row',
     backgroundColor: '#9b59b6',
-    paddingHorizontal: 15,
+    paddingHorizontal: 12,
     paddingVertical: 8,
     borderRadius: 20,
     alignItems: 'center',
     justifyContent: 'center',
-    elevation: Platform.OS === 'android' ? 5 : 0,
-    shadowColor: '#000',
-    shadowOffset: { width: 0, height: 2 },
-    shadowOpacity: 0.3,
-    shadowRadius: 4,
   },
   importButtonText: {
     color: 'white',
     fontWeight: 'bold',
-    marginLeft: 5,
   },
   modalContainer: {
     flex: 1,
