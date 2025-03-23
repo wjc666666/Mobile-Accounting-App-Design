@@ -1,5 +1,5 @@
 import React, { useState, useCallback, useEffect } from 'react';
-import { View, Text, StyleSheet, TouchableOpacity, Alert, Modal, ActivityIndicator, Platform, TouchableWithoutFeedback } from 'react-native';
+import { View, Text, StyleSheet, TouchableOpacity, Alert, Modal, ActivityIndicator, Platform, TouchableWithoutFeedback, Button } from 'react-native';
 import Ionicons from 'react-native-vector-icons/Ionicons';
 import paymentApis, { ImportedTransaction } from '../utils/paymentApis';
 
@@ -256,11 +256,12 @@ const ImportTransactions: React.FC<ImportTransactionsProps> = ({ onImportSuccess
     );
   };
 
-  // 使用useCallback确保函数引用稳定
-  const openImportModal = useCallback(() => {
-    console.log('Import button pressed, opening modal');
+  // Debug import touches
+  const handleImportPress = () => {
+    console.log('DIRECT BUTTON PRESS - IMPORT BUTTON PRESSED');
+    Alert.alert('Button Pressed', 'Import button was pressed!');
     setIsModalVisible(true);
-  }, []);
+  };
 
   // 关闭模态框
   const closeModal = useCallback(() => {
@@ -269,16 +270,13 @@ const ImportTransactions: React.FC<ImportTransactionsProps> = ({ onImportSuccess
   }, []);
 
   return (
-    <View style={styles.container} pointerEvents="box-none">
-      <TouchableOpacity
-        style={styles.importButton}
-        onPress={openImportModal}
-        activeOpacity={0.7}
-        hitSlop={{ top: 20, bottom: 20, left: 20, right: 20 }}
-      >
-        <Ionicons name="cloud-download-outline" size={20} color="white" />
-        <Text style={styles.importButtonText}>Import</Text>
-      </TouchableOpacity>
+    <View style={styles.outerContainer}>
+      {/* Basic button without any fancy styling to test touch responsiveness */}
+      <Button 
+        title="Import" 
+        onPress={handleImportPress} 
+        color="#9b59b6"
+      />
       
       <Modal
         visible={isModalVisible}
@@ -289,11 +287,9 @@ const ImportTransactions: React.FC<ImportTransactionsProps> = ({ onImportSuccess
           setIsModalVisible(false);
         }}
       >
-        <TouchableWithoutFeedback onPress={(event) => {
-          // 仅在点击背景时关闭模态框
-          if (event.target === event.currentTarget) {
-            setIsModalVisible(false);
-          }
+        <TouchableWithoutFeedback onPress={() => {
+          console.log('Background pressed, closing modal');
+          setIsModalVisible(false);
         }}>
           <View style={styles.modalContainer}>
             <TouchableWithoutFeedback>
@@ -349,10 +345,14 @@ const ImportTransactions: React.FC<ImportTransactionsProps> = ({ onImportSuccess
 };
 
 const styles = StyleSheet.create({
+  outerContainer: {
+    // Simplified container with no fancy styling that could block touches
+    minWidth: 100,
+  },
   container: {
     alignItems: 'center',
     justifyContent: 'center',
-    zIndex: 999, // 使用更高的zIndex
+    zIndex: 999,
     minWidth: 100,
     minHeight: 40,
   },
@@ -364,16 +364,11 @@ const styles = StyleSheet.create({
     borderRadius: 20,
     alignItems: 'center',
     justifyContent: 'center',
-    elevation: Platform.OS === 'android' ? 5 : 0, // 添加阴影效果增强可见性
+    elevation: Platform.OS === 'android' ? 5 : 0,
     shadowColor: '#000',
     shadowOffset: { width: 0, height: 2 },
     shadowOpacity: 0.3,
     shadowRadius: 4,
-  },
-  importButtonText: {
-    color: 'white',
-    fontWeight: 'bold',
-    marginLeft: 5,
   },
   modalContainer: {
     flex: 1,

@@ -363,7 +363,9 @@ const StatisticsScreen = () => {
     >
       <View style={styles.header}>
         <Text style={styles.headerTitle}>Financial Statistics</Text>
-        <ImportTransactions onImportSuccess={fetchData} />
+        <View style={styles.importButtonContainer}>
+          <ImportTransactions onImportSuccess={fetchData} />
+        </View>
       </View>
 
       {error && (
@@ -484,7 +486,6 @@ const styles = StyleSheet.create({
     flexDirection: 'row',
     justifyContent: 'space-between',
     alignItems: 'center',
-    zIndex: 10,
     position: 'relative',
   },
   headerTitle: {
@@ -492,6 +493,11 @@ const styles = StyleSheet.create({
     fontWeight: 'bold',
     color: 'white',
     flex: 1,
+  },
+  importButtonContainer: {
+    // Special container for the import button to ensure it's clickable
+    minWidth: 100,
+    height: 40,
   },
   errorContainer: {
     margin: 15,
