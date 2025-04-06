@@ -1,8 +1,12 @@
 import React, { useState } from 'react';
-import { View, Text, StyleSheet, ScrollView, ActivityIndicator, RefreshControl, TouchableOpacity, Alert } from 'react-native';
+import { View, Text, StyleSheet, ScrollView, ActivityIndicator, RefreshControl, TouchableOpacity, Dimensions } from 'react-native';
 import { incomeAPI, expenseAPI } from '../utils/api';
 import { useFocusEffect } from '@react-navigation/native';
 import ImportTransactions from '../components/ImportTransactions';
+import { BarChart } from 'react-native-chart-kit';
+
+// Get screen dimensions
+const screenWidth = Dimensions.get('window').width - 30; // Account for margins
 
 const StatisticsScreen = () => {
   const [isLoading, setIsLoading] = useState(true);
@@ -15,6 +19,7 @@ const StatisticsScreen = () => {
     total: 0,
     categories: [] as { name: string; amount: number; percentage: number }[],
   });
+  const [activeTab, setActiveTab] = useState<'income' | 'expense'>('expense');
   const [error, setError] = useState<string | null>(null);
 
   const balance = incomeData.total - expenseData.total;
@@ -346,10 +351,79 @@ const StatisticsScreen = () => {
     }
   };
 
+  // Get chart data for current tab
+  const getChartData = () => {
+    const data = activeTab === 'income' ? incomeData.categories : expenseData.categories;
+    
+    // Take top 5 categories for better readability
+    const topCategories = data
+      .sort((a, b) => b.amount - a.amount)
+      .slice(0, 5);
+    
+    return {
+      labels: topCategories.map(cat => cat.name.substring(0, 6)), // Truncate long names
+      datasets: [
+        {
+          data: topCategories.map(cat => cat.amount),
+        },
+      ],
+    };
+  };
+
+  // Chart configuration
+  const chartConfig = {
+    backgroundGradientFrom: '#ffffff',
+    backgroundGradientTo: '#ffffff',
+    color: (opacity = 1) => activeTab === 'income' 
+      ? `rgba(46, 204, 113, ${opacity})` // Green for income
+      : `rgba(231, 76, 60, ${opacity})`, // Red for expenses
+    strokeWidth: 2,
+    barPercentage: 0.7,
+    decimalPlaces: 0,
+  };
+
+  // Render category list with percentage bars
+  const renderCategoryList = () => {
+    const categories = activeTab === 'income' ? incomeData.categories : expenseData.categories;
+    
+    if (categories.length === 0) {
+      return (
+        <View style={styles.emptyState}>
+          <Text style={styles.emptyStateText}>No {activeTab} data available</Text>
+        </View>
+      );
+    }
+    
+    return (
+      <View style={styles.categoryList}>
+        {categories.map((category, index) => (
+          <View key={index} style={styles.categoryItem}>
+            <View style={styles.categoryHeader}>
+              <Text style={styles.categoryName}>{category.name}</Text>
+              <Text style={styles.categoryAmount}>${category.amount.toFixed(2)}</Text>
+            </View>
+            <View style={styles.percentageBarContainer}>
+              <View 
+                style={[
+                  styles.percentageBar, 
+                  { 
+                    width: `${category.percentage}%`,
+                    backgroundColor: activeTab === 'income' ? '#2ecc71' : '#e74c3c' 
+                  }
+                ]} 
+              />
+            </View>
+            <Text style={styles.percentageText}>{category.percentage}% of total</Text>
+          </View>
+        ))}
+      </View>
+    );
+  };
+
   if (isLoading) {
     return (
       <View style={styles.loadingContainer}>
-        <ActivityIndicator size="large" color="#9b59b6" />
+        <ActivityIndicator size="large" color="#3498db" />
       </View>
     );
   }
@@ -358,126 +432,107 @@ const StatisticsScreen = () => {
     <ScrollView 
       style={styles.container}
       refreshControl={
-        <RefreshControl refreshing={isRefreshing} onRefresh={onRefresh} />
+        <RefreshControl refreshing={isRefreshing} onRefresh={() => {
+          setIsRefreshing(true);
+          fetchData().finally(() => setIsRefreshing(false));
+        }} />
       }
     >
       <View style={styles.header}>
-        <Text style={styles.headerTitle}>Financial Statistics</Text>
-        
-        <View style={styles.buttonRow}>
-          {/* Direct test button */}
-          <TouchableOpacity
-            style={styles.testButton}
-            onPress={() => {
-              console.log('TEST BUTTON PRESSED');
-              Alert.alert('Test Button', 'Direct test button was pressed!');
-            }}
-          >
-            <Text style={styles.testButtonText}>Test</Text>
-          </TouchableOpacity>
-          
-          <View style={styles.importButtonContainer}>
-            <ImportTransactions onImportSuccess={fetchData} />
-          </View>
-        </View>
+        <Text style={styles.headerTitle}>Finance Statistics</Text>
       </View>
-
+      
       {error && (
         <View style={styles.errorContainer}>
           <Text style={styles.errorText}>{error}</Text>
+          <TouchableOpacity 
+            style={styles.retryButton} 
+            onPress={() => {
+              setIsLoading(true);
+              fetchData().finally(() => setIsLoading(false));
+            }}
+          >
+            <Text style={styles.retryText}>Retry</Text>
+          </TouchableOpacity>
         </View>
       )}
 
-      <View style={styles.summaryCard}>
-        <Text style={styles.summaryTitle}>Monthly Summary</Text>
-        <View style={styles.summaryRow}>
-          <View style={styles.summaryItem}>
-            <Text style={styles.summaryLabel}>Income</Text>
-            <Text style={[styles.summaryValue, { color: '#2ecc71' }]}>
-              {formatAmount(incomeData.total)}
-            </Text>
-          </View>
-          <View style={styles.summaryItem}>
-            <Text style={styles.summaryLabel}>Expenses</Text>
-            <Text style={[styles.summaryValue, { color: '#e74c3c' }]}>
-              {formatAmount(expenseData.total)}
-            </Text>
-          </View>
+      <View style={styles.summaryContainer}>
+        <View style={styles.summaryCard}>
+          <Text style={styles.summaryValue}>${incomeData.total.toFixed(2)}</Text>
+          <Text style={styles.summaryLabel}>Total Income</Text>
         </View>
-        <View style={styles.summaryRow}>
-          <View style={styles.summaryItem}>
-            <Text style={styles.summaryLabel}>Balance</Text>
-            <Text style={[
-              styles.summaryValue, 
-              balance >= 0 ? styles.positiveBalance : styles.negativeBalance
-            ]}>
-              {formatAmount(balance)}
-            </Text>
-          </View>
-          <View style={styles.summaryItem}>
-            <Text style={styles.summaryLabel}>Savings Rate</Text>
-            <Text style={[
-              styles.summaryValue, 
-              parseFloat(savingsRate) >= 0 ? styles.positiveBalance : styles.negativeBalance
-            ]}>
-              {savingsRate}%
-            </Text>
-          </View>
+        <View style={styles.summaryCard}>
+          <Text style={styles.summaryValue}>${expenseData.total.toFixed(2)}</Text>
+          <Text style={styles.summaryLabel}>Total Expenses</Text>
+        </View>
+        <View style={styles.summaryCard}>
+          <Text style={[styles.summaryValue, balance >= 0 ? styles.positiveBalance : styles.negativeBalance]}>
+            ${balance.toFixed(2)}
+          </Text>
+          <Text style={styles.summaryLabel}>Balance</Text>
         </View>
       </View>
 
-      <View style={styles.section}>
-        <Text style={styles.sectionTitle}>Income Breakdown</Text>
-        {incomeData.categories.length > 0 ? (
-          incomeData.categories.map((category, index) => (
-            <View key={index} style={styles.categoryItem}>
-              <View style={styles.categoryHeader}>
-                <Text style={styles.categoryName}>{category.name}</Text>
-                <Text style={styles.categoryAmount}>{formatAmount(category.amount)}</Text>
-              </View>
-              <View style={styles.progressBarContainer}>
-                <View 
-                  style={[
-                    styles.progressBar, 
-                    { width: `${category.percentage}%`, backgroundColor: '#2ecc71' }
-                  ]} 
-                />
-              </View>
-              <Text style={styles.categoryPercentage}>{category.percentage}%</Text>
-            </View>
-          ))
+      <View style={styles.savingContainer}>
+        <Text style={styles.savingLabel}>Saving Rate:</Text>
+        <Text style={styles.savingValue}>{savingsRate}%</Text>
+      </View>
+
+      <View style={styles.tabContainer}>
+        <TouchableOpacity 
+          style={[styles.tab, activeTab === 'income' && styles.activeTab]} 
+          onPress={() => setActiveTab('income')}
+        >
+          <Text style={[styles.tabText, activeTab === 'income' && styles.activeTabText]}>Income</Text>
+        </TouchableOpacity>
+        <TouchableOpacity 
+          style={[styles.tab, activeTab === 'expense' && styles.activeTab]} 
+          onPress={() => setActiveTab('expense')}
+        >
+          <Text style={[styles.tabText, activeTab === 'expense' && styles.activeTabText]}>Expenses</Text>
+        </TouchableOpacity>
+      </View>
+
+      <View style={styles.chartContainer}>
+        <Text style={styles.chartTitle}>
+          {activeTab === 'income' ? 'Income' : 'Expense'} Distribution
+        </Text>
+        {(activeTab === 'income' ? incomeData.categories : expenseData.categories).length > 0 ? (
+          <BarChart
+            data={getChartData()}
+            width={screenWidth}
+            height={220}
+            chartConfig={chartConfig}
+            verticalLabelRotation={30}
+            showValuesOnTopOfBars
+            fromZero
+            yAxisLabel=""
+            yAxisSuffix=""
+            style={styles.chart}
+          />
         ) : (
-          <View style={styles.emptyState}>
-            <Text style={styles.emptyStateText}>No income records yet</Text>
+          <View style={styles.emptyChart}>
+            <Text style={styles.emptyStateText}>
+              No {activeTab} data to display
+            </Text>
           </View>
         )}
       </View>
 
+      <View style={styles.categoryContainer}>
+        <Text style={styles.categoryTitle}>
+          {activeTab === 'income' ? 'Income' : 'Expense'} Categories
+        </Text>
+        {renderCategoryList()}
+      </View>
+
       <View style={styles.section}>
-        <Text style={styles.sectionTitle}>Expense Breakdown</Text>
-        {expenseData.categories.length > 0 ? (
-          expenseData.categories.map((category, index) => (
-            <View key={index} style={styles.categoryItem}>
-              <View style={styles.categoryHeader}>
-                <Text style={styles.categoryName}>{category.name}</Text>
-                <Text style={styles.categoryAmount}>{formatAmount(category.amount)}</Text>
-              </View>
-              <View style={styles.progressBarContainer}>
-                <View 
-                  style={[
-                    styles.progressBar, 
-                    { width: `${category.percentage}%`, backgroundColor: '#e74c3c' }
-                  ]} 
-                />
-              </View>
-              <Text style={styles.categoryPercentage}>{category.percentage}%</Text>
-            </View>
-          ))
-        ) : (
-          <View style={styles.emptyState}>
-            <Text style={styles.emptyStateText}>No expense records yet</Text>
-          </View>
-        )}
+        <Text style={styles.sectionTitle}>Import Transactions</Text>
+        <ImportTransactions onImportSuccess={() => {
+          setIsLoading(true);
+          fetchData().finally(() => setIsLoading(false));
+        }} />
       </View>
     </ScrollView>
   );
@@ -495,65 +550,44 @@ const styles = StyleSheet.create({
     backgroundColor: '#f5f5f5',
   },
   header: {
-    padding: 20,
-    backgroundColor: '#9b59b6',
-    flexDirection: 'column',
-    alignItems: 'flex-start',
+    backgroundColor: '#3498db',
+    padding: 15,
+    paddingTop: 25,
+    paddingBottom: 25,
   },
   headerTitle: {
-    fontSize: 24,
+    fontSize: 20,
     fontWeight: 'bold',
     color: 'white',
-    marginBottom: 10,
+    textAlign: 'center',
   },
-  buttonRow: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    alignSelf: 'flex-end',
-  },
-  errorContainer: {
-    margin: 15,
-    padding: 10,
-    backgroundColor: '#ffdddd',
-    borderRadius: 5,
-    borderLeftWidth: 5,
-    borderLeftColor: '#e74c3c',
-  },
-  errorText: {
-    color: '#c0392b',
-  },
-  summaryCard: {
-    margin: 15,
-    padding: 15,
-    backgroundColor: 'white',
-    borderRadius: 10,
-    elevation: 2,
-    shadowColor: '#000',
-    shadowOffset: { width: 0, height: 2 },
-    shadowOpacity: 0.1,
-    shadowRadius: 4,
-  },
-  summaryTitle: {
-    fontSize: 18,
-    fontWeight: 'bold',
-    marginBottom: 15,
-  },
-  summaryRow: {
+  summaryContainer: {
     flexDirection: 'row',
     justifyContent: 'space-between',
-    marginBottom: 10,
+    padding: 10,
   },
-  summaryItem: {
+  summaryCard: {
     flex: 1,
+    backgroundColor: 'white',
+    padding: 15,
+    margin: 5,
+    borderRadius: 8,
+    alignItems: 'center',
+    shadowColor: '#000',
+    shadowOffset: { width: 0, height: 1 },
+    shadowOpacity: 0.2,
+    shadowRadius: 2,
+    elevation: 2,
   },
   summaryLabel: {
-    fontSize: 14,
+    fontSize: 12,
     color: '#666',
+    marginTop: 5,
   },
   summaryValue: {
-    fontSize: 18,
+    fontSize: 16,
     fontWeight: 'bold',
-    marginTop: 5,
+    color: '#333',
   },
   positiveBalance: {
     color: '#2ecc71',
@@ -561,22 +595,106 @@ const styles = StyleSheet.create({
   negativeBalance: {
     color: '#e74c3c',
   },
-  section: {
-    margin: 15,
-    marginTop: 5,
-    padding: 15,
+  savingContainer: {
+    flexDirection: 'row',
+    justifyContent: 'center',
+    alignItems: 'center',
     backgroundColor: 'white',
-    borderRadius: 10,
-    elevation: 2,
+    padding: 15,
+    margin: 15,
+    borderRadius: 8,
     shadowColor: '#000',
-    shadowOffset: { width: 0, height: 2 },
-    shadowOpacity: 0.1,
-    shadowRadius: 4,
+    shadowOffset: { width: 0, height: 1 },
+    shadowOpacity: 0.2,
+    shadowRadius: 2,
+    elevation: 2,
   },
-  sectionTitle: {
+  savingLabel: {
+    fontSize: 16,
+    color: '#666',
+  },
+  savingValue: {
     fontSize: 18,
     fontWeight: 'bold',
+    color: '#3498db',
+    marginLeft: 10,
+  },
+  tabContainer: {
+    flexDirection: 'row',
+    backgroundColor: 'white',
+    margin: 15,
+    marginBottom: 5,
+    borderRadius: 8,
+    overflow: 'hidden',
+    shadowColor: '#000',
+    shadowOffset: { width: 0, height: 1 },
+    shadowOpacity: 0.2,
+    shadowRadius: 2,
+    elevation: 2,
+  },
+  tab: {
+    flex: 1,
+    padding: 15,
+    alignItems: 'center',
+  },
+  activeTab: {
+    backgroundColor: '#3498db',
+  },
+  tabText: {
+    fontSize: 16,
+    color: '#333',
+  },
+  activeTabText: {
+    color: 'white',
+    fontWeight: 'bold',
+  },
+  chartContainer: {
+    backgroundColor: 'white',
+    padding: 15,
+    margin: 15,
+    marginTop: 5,
+    borderRadius: 8,
+    shadowColor: '#000',
+    shadowOffset: { width: 0, height: 1 },
+    shadowOpacity: 0.2,
+    shadowRadius: 2,
+    elevation: 2,
+  },
+  chartTitle: {
+    fontSize: 16,
+    fontWeight: 'bold',
+    color: '#333',
+    marginBottom: 10,
+  },
+  chart: {
+    marginVertical: 8,
+    borderRadius: 8,
+  },
+  emptyChart: {
+    height: 200,
+    justifyContent: 'center',
+    alignItems: 'center',
+  },
+  categoryContainer: {
+    backgroundColor: 'white',
+    padding: 15,
+    margin: 15,
+    marginTop: 5,
+    borderRadius: 8,
+    shadowColor: '#000',
+    shadowOffset: { width: 0, height: 1 },
+    shadowOpacity: 0.2,
+    shadowRadius: 2,
+    elevation: 2,
+  },
+  categoryTitle: {
+    fontSize: 16,
+    fontWeight: 'bold',
+    color: '#333',
     marginBottom: 15,
+  },
+  categoryList: {
+    marginTop: 5,
   },
   categoryItem: {
     marginBottom: 15,
@@ -584,53 +702,73 @@ const styles = StyleSheet.create({
   categoryHeader: {
     flexDirection: 'row',
     justifyContent: 'space-between',
-    marginBottom: 5,
   },
   categoryName: {
-    fontSize: 16,
+    fontSize: 14,
     fontWeight: '500',
+    color: '#333',
   },
   categoryAmount: {
-    fontSize: 16,
-    fontWeight: 'bold',
+    fontSize: 14,
+    fontWeight: '500',
+    color: '#333',
   },
-  progressBarContainer: {
+  percentageBarContainer: {
     height: 10,
     backgroundColor: '#f0f0f0',
     borderRadius: 5,
-    marginBottom: 5,
+    marginTop: 5,
+    overflow: 'hidden',
   },
-  progressBar: {
-    height: 10,
-    borderRadius: 5,
+  percentageBar: {
+    height: '100%',
   },
-  categoryPercentage: {
+  percentageText: {
     fontSize: 12,
     color: '#666',
+    marginTop: 5,
     textAlign: 'right',
   },
+  errorContainer: {
+    margin: 15,
+    padding: 15,
+    backgroundColor: '#ffecec',
+    borderRadius: 8,
+    borderLeftWidth: 4,
+    borderLeftColor: '#e74c3c',
+  },
+  errorText: {
+    color: '#c0392b',
+  },
+  retryButton: {
+    backgroundColor: '#e74c3c',
+    padding: 8,
+    borderRadius: 4,
+    alignSelf: 'flex-end',
+    marginTop: 10,
+  },
+  retryText: {
+    color: 'white',
+    fontWeight: 'bold',
+  },
+  section: {
+    margin: 15,
+    marginTop: 5,
+  },
+  sectionTitle: {
+    fontSize: 18,
+    fontWeight: 'bold',
+    color: '#333',
+    marginBottom: 10,
+  },
   emptyState: {
-    alignItems: 'center',
     padding: 20,
+    alignItems: 'center',
+    justifyContent: 'center',
   },
   emptyStateText: {
     color: '#999',
     fontSize: 16,
-  },
-  testButton: {
-    backgroundColor: '#e74c3c',
-    paddingHorizontal: 15,
-    paddingVertical: 8,
-    borderRadius: 20,
-    marginRight: 10,
-  },
-  testButtonText: {
-    color: 'white',
-    fontWeight: 'bold',
-  },
-  importButtonContainer: {
-    minWidth: 100,
-    height: 40,
   },
 });
 

@@ -3,6 +3,7 @@ import { View, Text, StyleSheet, ScrollView, ActivityIndicator, RefreshControl, 
 import { incomeAPI, expenseAPI, budgetAPI } from '../utils/api';
 import { useAuth } from '../utils/AuthContext';
 import { useFocusEffect } from '@react-navigation/native';
+import { ProgressBar } from 'react-native-paper';
 
 interface Transaction {
   id: number;
@@ -11,6 +12,82 @@ interface Transaction {
   date: string;
   description: string;
 }
+
+// Add this new component for budget analysis
+const BudgetAnalysisCard = ({ budgetData }: { budgetData: any }) => {
+  if (!budgetData || !budgetData.summary) {
+    return (
+      <View style={styles.emptyState}>
+        <Text style={styles.emptyStateText}>No budget data available</Text>
+      </View>
+    );
+  }
+
+  const { summary, categories, period } = budgetData;
+  const { totalIncome, totalExpense, balance, savingRate } = summary;
+
+  // Calculate budget utilization
+  const budgetUtilization = totalIncome > 0 ? (totalExpense / totalIncome) : 0;
+  const progressColor = 
+    budgetUtilization > 0.9 ? '#FF6B6B' :  // Over 90% - red
+    budgetUtilization > 0.7 ? '#FFD166' :  // Over 70% - yellow
+    '#06D6A0';  // Under 70% - green
+
+  return (
+    <View style={styles.budgetCard}>
+      <View style={styles.budgetHeader}>
+        <Text style={styles.budgetTitle}>Monthly Budget</Text>
+        <Text style={styles.budgetPeriod}>
+          {new Date(period.start).toLocaleDateString()} - {new Date(period.end).toLocaleDateString()}
+        </Text>
+      </View>
+
+      <View style={styles.budgetRow}>
+        <Text style={styles.budgetLabel}>Income:</Text>
+        <Text style={styles.budgetIncomeValue}>${totalIncome.toFixed(2)}</Text>
+      </View>
+
+      <View style={styles.budgetRow}>
+        <Text style={styles.budgetLabel}>Expenses:</Text>
+        <Text style={styles.budgetExpenseValue}>${totalExpense.toFixed(2)}</Text>
+      </View>
+
+      <View style={styles.budgetProgressContainer}>
+        <Text style={styles.budgetProgressLabel}>
+          Budget Used: {(budgetUtilization * 100).toFixed(0)}%
+        </Text>
+        <ProgressBar
+          progress={budgetUtilization}
+          color={progressColor}
+          style={styles.budgetProgressBar}
+        />
+      </View>
+
+      <View style={styles.budgetSummaryContainer}>
+        <View style={styles.budgetSummaryItem}>
+          <Text style={styles.budgetSummaryValue}>${balance.toFixed(2)}</Text>
+          <Text style={styles.budgetSummaryLabel}>Remaining</Text>
+        </View>
+        <View style={styles.budgetSummaryItem}>
+          <Text style={styles.budgetSummaryValue}>{savingRate.toFixed(1)}%</Text>
+          <Text style={styles.budgetSummaryLabel}>Saving Rate</Text>
+        </View>
+      </View>
+
+      {categories && categories.length > 0 && (
+        <View style={styles.topExpenseContainer}>
+          <Text style={styles.topExpenseTitle}>Top Expenses</Text>
+          {categories.slice(0, 3).map((category: any, index: number) => (
+            <View key={index} style={styles.topExpenseItem}>
+              <Text style={styles.topExpenseCategory}>{category.category}</Text>
+              <Text style={styles.topExpenseAmount}>${category.amount.toFixed(2)}</Text>
+            </View>
+          ))}
+        </View>
+      )}
+    </View>
+  );
+};
 
 const HomeScreen = () => {
   const { user, logout } = useAuth();
@@ -249,43 +326,36 @@ const HomeScreen = () => {
             style={styles.retryButton} 
             onPress={() => {
               setIsLoading(true);
-              fetchData();
+              fetchData().finally(() => setIsLoading(false));
             }}
           >
-            <Text style={styles.retryButtonText}>Retry</Text>
+            <Text style={styles.retryText}>Retry</Text>
           </TouchableOpacity>
         </View>
       )}
-      
-      <View style={styles.summaryCard}>
-        <Text style={styles.summaryTitle}>Monthly Overview</Text>
-        <View style={styles.summaryRow}>
-          <View style={styles.summaryItem}>
-            <Text style={styles.summaryLabel}>Income</Text>
-            <Text style={[styles.summaryValue, { color: '#2ecc71' }]}>
-              {formatAmount(totalIncome)}
-            </Text>
-          </View>
-          <View style={styles.summaryItem}>
-            <Text style={styles.summaryLabel}>Expenses</Text>
-            <Text style={[styles.summaryValue, { color: '#e74c3c' }]}>
-              {formatAmount(totalExpense)}
-            </Text>
-          </View>
+
+      <View style={styles.summaryContainer}>
+        <View style={styles.summaryCard}>
+          <Text style={styles.summaryLabel}>Income</Text>
+          <Text style={styles.incomeValue}>{formatAmount(totalIncome)}</Text>
         </View>
-        <View style={styles.summaryRow}>
-          <View style={styles.summaryItem}>
-            <Text style={styles.summaryLabel}>Balance</Text>
-            <Text style={[
-              styles.summaryValue, 
-              balance >= 0 ? styles.positiveBalance : styles.negativeBalance
-            ]}>
-              {formatAmount(balance)}
-            </Text>
-          </View>
+        <View style={styles.summaryCard}>
+          <Text style={styles.summaryLabel}>Expenses</Text>
+          <Text style={styles.expenseValue}>{formatAmount(totalExpense)}</Text>
+        </View>
+        <View style={styles.summaryCard}>
+          <Text style={styles.summaryLabel}>Balance</Text>
+          <Text style={[styles.balanceValue, balance >= 0 ? styles.positiveBalance : styles.negativeBalance]}>
+            {formatAmount(balance)}
+          </Text>
         </View>
       </View>
       
+      <View style={styles.section}>
+        <Text style={styles.sectionTitle}>Budget Analysis</Text>
+        <BudgetAnalysisCard budgetData={budgetAnalysis} />
+      </View>
+
       <View style={styles.section}>
         <Text style={styles.sectionTitle}>Recent Transactions</Text>
         {getRecentTransactions().length > 0 ? (
@@ -308,19 +378,6 @@ const HomeScreen = () => {
         ) : (
           <View style={styles.emptyState}>
             <Text style={styles.emptyStateText}>No transactions yet</Text>
-          </View>
-        )}
-      </View>
-      
-      <View style={styles.section}>
-        <Text style={styles.sectionTitle}>Budget Status</Text>
-        {budgetAnalysis ? (
-          <View>
-            <Text>Budget analysis data will be displayed here</Text>
-          </View>
-        ) : (
-          <View style={styles.emptyState}>
-            <Text style={styles.emptyStateText}>No budget set</Text>
           </View>
         )}
       </View>
@@ -377,8 +434,13 @@ const styles = StyleSheet.create({
   errorText: {
     color: '#c0392b',
   },
-  summaryCard: {
+  summaryContainer: {
+    flexDirection: 'row',
+    justifyContent: 'space-between',
     margin: 15,
+  },
+  summaryCard: {
+    flex: 1,
     padding: 15,
     backgroundColor: 'white',
     borderRadius: 10,
@@ -388,24 +450,23 @@ const styles = StyleSheet.create({
     shadowOpacity: 0.1,
     shadowRadius: 4,
   },
-  summaryTitle: {
-    fontSize: 18,
-    fontWeight: 'bold',
-    marginBottom: 15,
-  },
-  summaryRow: {
-    flexDirection: 'row',
-    justifyContent: 'space-between',
-    marginBottom: 10,
-  },
-  summaryItem: {
-    flex: 1,
-  },
   summaryLabel: {
     fontSize: 14,
     color: '#666',
   },
-  summaryValue: {
+  incomeValue: {
+    fontSize: 18,
+    fontWeight: 'bold',
+    marginTop: 5,
+    color: '#2ecc71',
+  },
+  expenseValue: {
+    fontSize: 18,
+    fontWeight: 'bold',
+    marginTop: 5,
+    color: '#e74c3c',
+  },
+  balanceValue: {
     fontSize: 18,
     fontWeight: 'bold',
     marginTop: 5,
@@ -475,9 +536,111 @@ const styles = StyleSheet.create({
     borderRadius: 20,
     marginTop: 10,
   },
-  retryButtonText: {
+  retryText: {
     color: 'white',
     fontWeight: 'bold',
+  },
+  budgetCard: {
+    backgroundColor: '#fff',
+    borderRadius: 8,
+    padding: 15,
+    marginVertical: 10,
+    shadowColor: '#000',
+    shadowOffset: { width: 0, height: 1 },
+    shadowOpacity: 0.2,
+    shadowRadius: 3,
+    elevation: 3,
+  },
+  budgetHeader: {
+    marginBottom: 15,
+  },
+  budgetTitle: {
+    fontSize: 18,
+    fontWeight: 'bold',
+    color: '#333',
+  },
+  budgetPeriod: {
+    fontSize: 12,
+    color: '#666',
+    marginTop: 2,
+  },
+  budgetRow: {
+    flexDirection: 'row',
+    justifyContent: 'space-between',
+    marginBottom: 10,
+  },
+  budgetLabel: {
+    fontSize: 15,
+    color: '#555',
+  },
+  budgetIncomeValue: {
+    fontSize: 15,
+    fontWeight: '600',
+    color: '#2ecc71',
+  },
+  budgetExpenseValue: {
+    fontSize: 15,
+    fontWeight: '600',
+    color: '#e74c3c',
+  },
+  budgetProgressContainer: {
+    marginVertical: 10,
+  },
+  budgetProgressLabel: {
+    fontSize: 14,
+    color: '#555',
+    marginBottom: 5,
+  },
+  budgetProgressBar: {
+    height: 10,
+    borderRadius: 5,
+    backgroundColor: '#e0e0e0',
+  },
+  budgetSummaryContainer: {
+    flexDirection: 'row',
+    justifyContent: 'space-around',
+    marginVertical: 15,
+    paddingVertical: 10,
+    borderTopWidth: 1,
+    borderTopColor: '#f0f0f0',
+    borderBottomWidth: 1,
+    borderBottomColor: '#f0f0f0',
+  },
+  budgetSummaryItem: {
+    alignItems: 'center',
+  },
+  budgetSummaryValue: {
+    fontSize: 16,
+    fontWeight: 'bold',
+    color: '#333',
+  },
+  budgetSummaryLabel: {
+    fontSize: 12,
+    color: '#666',
+    marginTop: 2,
+  },
+  topExpenseContainer: {
+    marginTop: 5,
+  },
+  topExpenseTitle: {
+    fontSize: 15,
+    fontWeight: '600',
+    color: '#333',
+    marginBottom: 10,
+  },
+  topExpenseItem: {
+    flexDirection: 'row',
+    justifyContent: 'space-between',
+    marginBottom: 8,
+  },
+  topExpenseCategory: {
+    fontSize: 14,
+    color: '#555',
+  },
+  topExpenseAmount: {
+    fontSize: 14,
+    fontWeight: '500',
+    color: '#e74c3c',
   },
 });
 
