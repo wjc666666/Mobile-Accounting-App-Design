@@ -13,6 +13,7 @@ import SettingsScreen from '../screens/SettingsScreen';
 import LoginScreen from '../screens/LoginScreen';
 import RegisterScreen from '../screens/RegisterScreen';
 import TestScreen from '../screens/TestScreen';
+import FinanceAIScreen from '../screens/FinanceAIScreen';
 
 // Import auth and theme contexts
 import { useAuth } from '../utils/AuthContext';
@@ -116,6 +117,15 @@ const StatisticsStack = () => {
   );
 };
 
+// Finance AI stack navigator
+const FinanceAIStack = () => {
+  return (
+    <Stack.Navigator screenOptions={{ headerShown: false }}>
+      <Stack.Screen name="FinanceAIMain" component={FinanceAIScreen} />
+    </Stack.Navigator>
+  );
+};
+
 // Settings stack navigator
 const SettingsStack = () => {
   return (
@@ -175,17 +185,17 @@ const MainAppNavigator = () => {
         }}
       />
       <Tab.Screen
+        name="FinanceAI"
+        component={FinanceAIStack}
+        options={{
+          tabBarIcon: ({ focused }) => <TabIcon name="AI" focused={focused} />,
+        }}
+      />
+      <Tab.Screen
         name="Settings"
         component={SettingsStack}
         options={{
           tabBarIcon: ({ focused }) => <TabIcon name="Settings" focused={focused} />,
-        }}
-      />
-      <Tab.Screen
-        name="Test"
-        component={TestScreen}
-        options={{
-          tabBarIcon: ({ focused }) => <TabIcon name="Test" focused={focused} />,
         }}
       />
     </Tab.Navigator>

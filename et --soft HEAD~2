@@ -1,0 +1,60 @@
+[33ma751eb5[m[33m ([m[1;36mHEAD[m[33m -> [m[1;32mmain[m[33m)[m Add AI Financial Analysis feature with mocked responses
+[33mebbc929[m Add AI Financial Analysis Feature with English UI
+[33m3302412[m[33m ([m[1;31morigin/main[m[33m, [m[1;31morigin/HEAD[m[33m)[m Add dark mode support and transaction history features
+[33me6d6af8[m 修复预算分析功能，使用前端计算的当前交易数据生成预算分析
+[33mcb6df9a[m Add budget analysis to HomeScreen and histogram visualization to StatisticsScreen
+[33m4f38313[m Update README with payment app integration features
+[33m3b9345f[m Integrate native AppLauncher module for direct app launching
+[33mea0a9f5[m Fix: Move queries element outside of application in AndroidManifest.xml
+[33m5eafb84[m Fix: Enhance deep linking implementation for Alipay and WeChat
+[33m467ef27[m Fix: Improve compatibility with Alipay and WeChat deep links
+[33mc542e43[m Fix: Completely redesign header layout to fix touch response issues
+[33ma369fa3[m Add direct test button to diagnose touch responsiveness issues
+[33m6e93bbf[m Fix: Complete rewrite of ImportTransactions component to fix button responsiveness issues
+[33m53d21eb[m Fix: Replace TouchableOpacity with standard Button for import functionality
+[33m9c25214[m Fix: Ensure Import button works consistently after login
+[33m7a47b80[m Add real Alipay and WeChat bill import functionality
+[33m1d0d664[m Fix: Replace @expo/vector-icons with react-native-vector-icons
+[33m1a2c95d[m Add payment platform integration for importing transactions
+[33m4f0bdc7[m Remove frontend submodule reference
+[33m3013fc1[m Improve project documentation and Git configuration
+[33m1e6213d[m Merge remote changes
+[33mfcc94de[m Update frontend submodule with data display fixes
+[33md12a8dc[m Resolve merge conflicts in README.md
+[33m8fb4122[m Fix data display issues in HomeScreen and StatisticsScreen
+[33m5ac1aba[m 重组数据库文件结构，添加数据库初始化脚本
+[33m2426d67[m 修复API连接和数据渲染问题，添加测试页面
+[33me4e940f[m 修复获取收入和支出记录的错误
+[33m0b8b42b[m 修复用户认证和API连接问题
+[33m4fb7246[m 更新前端子模块，完成前后端连接
+[33m5089784[m 完成前后端连接，修复UI问题，将所有中文提示改为英文
+[33md47e1fb[m 完成前后端连接，实现完整的全栈应用
+[33ma0f015f[m 更新整个项目，包括前端和配置文件
+[33m96d768d[m 合并README.md并更新项目信息
+[33mbf1011a[m 完成移动记账应用的基本功能实现
+[33m79f777e[m Initial commit
+[33m1dca95d[m finsh 5th week's code
+[33m14e7abf[m Finsh 4th week
+[33m0e2a33e[m change name
+[33m5301af2[m Force upload missing files
+[33m9266424[m edit frontend
+[33ma4e0ea3[m Force upload missing files
+[33m662bf16[m debug
+[33m1cb73ac[m JWT
+[33m757d6a8[m create basic project structure
+[33m3df20ca[m edit read.me
+[33mf2029cb[m inital node.js
+[33mf5770f4[m debug
+[33m2349026[m Setup MySQL connection & successfully connected using JDBC
+[33m68db1b4[m Fixed system architecture diagram alignment using <pre> tag
+[33mca26a38[m Fixed system architecture diagram alignment
+[33m2311eb9[m Fixed system architecture diagram alignment
+[33me17bdf2[m update System Architecture Diagram
+[33m18d42db[m Updated system architecture diagram
+[33mc8c7227[m update RM Diagram
+[33mda1b8c1[m updated RM
+[33m474bd50[m edit ReadMe
+[33mf8f138a[m Initial commit - Kotlin project setup
+[33mfaacafd[m edit ReadMe
+[33m5c202b1[m edit ReadMe
+[33m81d18f1[m Initial commit

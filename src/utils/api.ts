@@ -1,6 +1,7 @@
 import axios from 'axios';
 // Temporarily comment out AsyncStorage
 // import AsyncStorage from '@react-native-async-storage/async-storage';
+import { OPENAI_API_KEY } from '@env';
 
 // Store token in memory
 let memoryToken: string | null = null;
@@ -202,6 +203,127 @@ export const budgetAPI = {
       return response.data;
     } catch (error) {
       console.error('Failed to get budget analysis:', error);
+      throw error;
+    }
+  },
+};
+
+// OpenAI API URL
+const OPENAI_API_URL = 'https://api.openai.com/v1/chat/completions';
+
+// Financial AI API
+export const financialAIAPI = {
+  // 分析财务数据
+  analyzeFinances: async (financialData: string, question: string) => {
+    try {
+      console.log('Starting financial analysis...');
+      
+      // For development/testing without using the API key
+      const useMockResponse = !OPENAI_API_KEY || OPENAI_API_KEY === '';
+      
+      if (useMockResponse) {
+        console.log('Using mock response (no API key provided)');
+        // Generate a mocked response based on the question
+        let mockedResponse = '';
+        
+        if (question.toLowerCase().includes('saving rate')) {
+          mockedResponse = `Based on your financial data, your current saving rate is ${Math.floor(Math.random() * 15) + 5}%, which is ${Math.random() > 0.5 ? 'below' : 'close to'} the recommended 20% saving rate for financial stability.
+          
+To improve your saving rate, consider:
+1. Creating a detailed budget to track all expenses
+2. Automating transfers to a savings account
+3. Reducing discretionary spending on non-essential items
+4. Looking for opportunities to increase your income
+5. Reviewing and negotiating fixed expenses like insurance and subscriptions`;
+        } else if (question.toLowerCase().includes('income') && question.toLowerCase().includes('expense')) {
+          mockedResponse = `Analyzing your income and expenses:
+
+Your total income appears to be sufficient to cover your basic expenses, but there's room for optimization. Your highest expense category is taking up a significant portion of your budget.
+
+Recommendations:
+1. Review your highest expense category to identify potential areas for reduction
+2. Consider building an emergency fund of 3-6 months of expenses
+3. Allocate at least 20% of income to savings and investments
+4. Track daily expenses for 30 days to identify spending patterns
+5. Consider the 50/30/20 rule: 50% for needs, 30% for wants, and 20% for savings`;
+        } else if (question.toLowerCase().includes('spending') || question.toLowerCase().includes('expenses')) {
+          mockedResponse = `Your spending patterns show potential areas for optimization:
+
+1. Look at recurring subscriptions and services - are you using all of them?
+2. Meal planning and cooking at home can significantly reduce food expenses
+3. Consider energy efficiency improvements to reduce utility costs
+4. Shop around for better insurance rates annually
+5. Use cash-back or rewards credit cards for regular purchases (but pay them off monthly)
+6. Implement a 24-hour rule for non-essential purchases to avoid impulse buying`;
+        } else if (question.toLowerCase().includes('income') && question.toLowerCase().includes('diversif')) {
+          mockedResponse = `Regarding income diversification:
+
+Your current income sources appear somewhat limited. Diversifying income streams is important for financial resilience.
+
+Consider these options:
+1. Develop skills for freelance or consulting work in your field
+2. Explore passive income opportunities like investments or rental property
+3. Create digital products related to your expertise
+4. Start a small side business based on your skills or interests
+5. Invest in dividend-paying stocks or REITs for income
+6. Look for opportunities to increase value at your current job to negotiate raises`;
+        } else {
+          mockedResponse = `Based on your financial summary, here are some general insights:
+
+1. Your current balance shows you're managing to keep expenses below income, which is positive
+2. Consider building or strengthening your emergency fund to cover 3-6 months of expenses
+3. Review your highest expense category to identify potential savings
+4. Set specific, measurable financial goals for the short, medium, and long term
+5. Consider consulting with a financial advisor for personalized investment strategies
+6. Regularly review your financial progress and adjust your plan as needed`;
+        }
+        
+        // Simulate network delay
+        await new Promise(resolve => setTimeout(resolve, 1500));
+        
+        return mockedResponse;
+      }
+      
+      // Real API call if API key is available
+      console.log('Using OpenAI API for analysis');
+      
+      // 构建发送给OpenAI的消息
+      const messages = [
+        {
+          role: "system",
+          content: "You are a professional financial analyst and advisor specializing in personal finance. Your responses should be based on the user's financial data, providing insightful analysis and practical advice."
+        },
+        {
+          role: "user",
+          content: `Here is my financial data:\n${financialData}\n\nMy question is: ${question}`
+        }
+      ];
+
+      // 调用OpenAI API
+      const response = await fetch(OPENAI_API_URL, {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+          'Authorization': `Bearer ${OPENAI_API_KEY}`
+        },
+        body: JSON.stringify({
+          model: "gpt-3.5-turbo", // Using a more widely available model
+          messages: messages,
+          max_tokens: 1000,
+          temperature: 0.7
+        })
+      });
+
+      if (!response.ok) {
+        const errorData = await response.text();
+        console.error('OpenAI API error details:', errorData);
+        throw new Error(`API request failed with status ${response.status}`);
+      }
+
+      const data = await response.json();
+      return data.choices[0].message.content;
+    } catch (error) {
+      console.error('Failed to analyze finances:', error);
       throw error;
     }
   },
