@@ -142,6 +142,7 @@ const HomeScreen = () => {
       console.log('Income data:', incomesData);
       
       // Debug income data
+      let processedIncomes: Transaction[] = [];
       if (Array.isArray(incomesData)) {
         console.log('Income data is an array with length:', incomesData.length);
         if (incomesData.length > 0) {
@@ -150,7 +151,7 @@ const HomeScreen = () => {
           console.log('First income amount type:', typeof incomesData[0].amount);
           
           // Convert string amounts to numbers if needed
-          const processedIncomes = incomesData.map(income => ({
+          processedIncomes = incomesData.map(income => ({
             ...income,
             amount: typeof income.amount === 'string' ? parseFloat(income.amount) : income.amount
           }));
@@ -170,8 +171,9 @@ const HomeScreen = () => {
       console.log('Expense data:', expensesData);
       
       // Process expense data similarly
+      let processedExpenses: Transaction[] = [];
       if (Array.isArray(expensesData)) {
-        const processedExpenses = expensesData.map(expense => ({
+        processedExpenses = expensesData.map(expense => ({
           ...expense,
           amount: typeof expense.amount === 'string' ? parseFloat(expense.amount) : expense.amount
         }));
@@ -180,11 +182,79 @@ const HomeScreen = () => {
         setExpenses([]);
       }
       
+      // 在这里直接计算总额，而不是使用 safeIncomes 和 safeExpenses
+      const currentTotalIncome = processedIncomes.reduce((sum, income) => {
+        const amount = income && typeof income.amount === 'number' ? income.amount : 0;
+        return sum + amount;
+      }, 0);
+      
+      const currentTotalExpense = processedExpenses.reduce((sum, expense) => {
+        const amount = expense && typeof expense.amount === 'number' ? expense.amount : 0;
+        return sum + amount;
+      }, 0);
+      
+      const currentBalance = currentTotalIncome - currentTotalExpense;
+      
       // Get budget analysis
       console.log('Fetching budget analysis...');
       const budgetData = await budgetAPI.getBudgetAnalysis();
       console.log('Budget analysis:', budgetData);
-      setBudgetAnalysis(budgetData || {});
+      
+      // 如果预算分析数据为空或总金额为零，但有交易数据，则使用前端的交易数据计算
+      if ((!budgetData || 
+           (budgetData.summary && budgetData.summary.totalIncome === 0 && budgetData.summary.totalExpense === 0)) &&
+          (processedIncomes.length > 0 || processedExpenses.length > 0)) {
+        
+        console.log('使用前端交易数据生成预算分析...');
+        
+        // 获取当前月份的第一天和最后一天
+        const now = new Date();
+        const firstDay = new Date(now.getFullYear(), now.getMonth(), 1).toISOString().split('T')[0];
+        const lastDay = new Date(now.getFullYear(), now.getMonth() + 1, 0).toISOString().split('T')[0];
+        
+        // 使用计算好的当前值
+        const savingRate = currentTotalIncome > 0 ? (currentBalance / currentTotalIncome) * 100 : 0;
+        
+        // 按类别分组支出
+        const expenseCategories = {} as Record<string, number>;
+        processedExpenses.forEach((expense: Transaction) => {
+          const amount = typeof expense.amount === 'number' ? expense.amount : 0;
+          if (expenseCategories[expense.category]) {
+            expenseCategories[expense.category] += amount;
+          } else {
+            expenseCategories[expense.category] = amount;
+          }
+        });
+        
+        // 转换为类别数组
+        const categoryData = Object.keys(expenseCategories).map(category => ({
+          category,
+          amount: expenseCategories[category]
+        }));
+        
+        // 排序（金额最大的在前）
+        categoryData.sort((a, b) => b.amount - a.amount);
+        
+        // 构建分析结果
+        const generatedBudgetData = {
+          period: {
+            start: firstDay,
+            end: lastDay
+          },
+          summary: {
+            totalIncome: currentTotalIncome,
+            totalExpense: currentTotalExpense,
+            balance: currentBalance,
+            savingRate: parseFloat(savingRate.toFixed(2))
+          },
+          categories: categoryData
+        };
+        
+        console.log('生成的预算分析:', generatedBudgetData);
+        setBudgetAnalysis(generatedBudgetData);
+      } else {
+        setBudgetAnalysis(budgetData || {});
+      }
       
       console.log('All data fetched');
     } catch (error: any) {
