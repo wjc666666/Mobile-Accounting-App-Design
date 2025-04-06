@@ -2,6 +2,7 @@ import React, { useState } from 'react';
 import { View, StyleSheet, Text, TouchableOpacity, Alert, TextInput, ActivityIndicator } from 'react-native';
 // import { TextInput, Button } from 'react-native-paper';
 import { useAuth } from '../utils/AuthContext';
+import { useTheme, lightTheme, darkTheme } from '../utils/ThemeContext';
 
 interface LoginScreenProps {
   navigation: any;
@@ -12,6 +13,8 @@ const LoginScreen: React.FC<LoginScreenProps> = ({ navigation }) => {
   const [password, setPassword] = useState('');
   const [isLoading, setIsLoading] = useState(false);
   const { login } = useAuth();
+  const { isDarkMode } = useTheme();
+  const themeColors = isDarkMode ? darkTheme : lightTheme;
 
   const handleLogin = async () => {
     if (!email || !password) {
@@ -31,14 +34,22 @@ const LoginScreen: React.FC<LoginScreenProps> = ({ navigation }) => {
   };
 
   return (
-    <View style={styles.container}>
-      <Text style={styles.title}>Welcome Back</Text>
-      <Text style={styles.subtitle}>Login to your account</Text>
+    <View style={[styles.container, { backgroundColor: themeColors.background }]}>
+      <Text style={[styles.title, { color: themeColors.primary }]}>Welcome Back</Text>
+      <Text style={[styles.subtitle, { color: themeColors.secondaryText }]}>Login to your account</Text>
 
       <View style={styles.form}>
         <TextInput
-          style={styles.input}
+          style={[
+            styles.input, 
+            { 
+              backgroundColor: isDarkMode ? themeColors.card : '#f9f9f9',
+              borderColor: themeColors.border,
+              color: themeColors.primaryText
+            }
+          ]}
           placeholder="Email"
+          placeholderTextColor={themeColors.secondaryText}
           value={email}
           onChangeText={setEmail}
           keyboardType="email-address"
@@ -46,15 +57,23 @@ const LoginScreen: React.FC<LoginScreenProps> = ({ navigation }) => {
         />
 
         <TextInput
-          style={styles.input}
+          style={[
+            styles.input, 
+            { 
+              backgroundColor: isDarkMode ? themeColors.card : '#f9f9f9',
+              borderColor: themeColors.border,
+              color: themeColors.primaryText
+            }
+          ]}
           placeholder="Password"
+          placeholderTextColor={themeColors.secondaryText}
           value={password}
           onChangeText={setPassword}
           secureTextEntry
         />
 
         <TouchableOpacity
-          style={styles.button}
+          style={[styles.button, { backgroundColor: themeColors.primary }]}
           onPress={handleLogin}
           disabled={isLoading}
         >
@@ -66,9 +85,9 @@ const LoginScreen: React.FC<LoginScreenProps> = ({ navigation }) => {
         </TouchableOpacity>
 
         <View style={styles.registerContainer}>
-          <Text style={styles.registerText}>Don't have an account?</Text>
+          <Text style={[styles.registerText, { color: themeColors.secondaryText }]}>Don't have an account?</Text>
           <TouchableOpacity onPress={() => navigation.navigate('Register')}>
-            <Text style={styles.registerLink}>Register Now</Text>
+            <Text style={[styles.registerLink, { color: themeColors.primary }]}>Register Now</Text>
           </TouchableOpacity>
         </View>
       </View>

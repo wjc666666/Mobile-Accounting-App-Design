@@ -1,5 +1,5 @@
 import React from 'react';
-import { NavigationContainer } from '@react-navigation/native';
+import { NavigationContainer, DefaultTheme, DarkTheme } from '@react-navigation/native';
 import { createBottomTabNavigator } from '@react-navigation/bottom-tabs';
 import { createStackNavigator } from '@react-navigation/stack';
 import { Text, View, StyleSheet, ActivityIndicator } from 'react-native';
@@ -14,20 +14,57 @@ import LoginScreen from '../screens/LoginScreen';
 import RegisterScreen from '../screens/RegisterScreen';
 import TestScreen from '../screens/TestScreen';
 
-// Import auth context
+// Import auth and theme contexts
 import { useAuth } from '../utils/AuthContext';
+import { useTheme, lightTheme, darkTheme } from '../utils/ThemeContext';
 
 // Create tab and stack navigators
 const Tab = createBottomTabNavigator();
 const Stack = createStackNavigator();
 const AuthStack = createStackNavigator();
 
+// 自定义导航主题
+const customLightTheme = {
+  ...DefaultTheme,
+  colors: {
+    ...DefaultTheme.colors,
+    primary: lightTheme.primary,
+    background: lightTheme.background,
+    card: lightTheme.card,
+    text: lightTheme.text,
+    border: lightTheme.border,
+  }
+};
+
+const customDarkTheme = {
+  ...DarkTheme,
+  colors: {
+    ...DarkTheme.colors,
+    primary: darkTheme.primary,
+    background: darkTheme.background,
+    card: darkTheme.card,
+    text: darkTheme.text,
+    border: darkTheme.border,
+  }
+};
+
 // Custom tab bar icon component
 const TabIcon = ({ name, focused }: { name: string; focused: boolean }) => {
-  // You can replace this with actual icons
+  const { isDarkMode } = useTheme();
+  const themeColors = isDarkMode ? darkTheme : lightTheme;
+  
   return (
-    <View style={[styles.iconContainer, focused && styles.iconContainerFocused]}>
-      <Text style={[styles.iconText, focused && styles.iconTextFocused]}>{name}</Text>
+    <View style={[
+      styles.iconContainer, 
+      focused && { backgroundColor: `${themeColors.primary}20` } // 20 is opacity in hex (12.5%)
+    ]}>
+      <Text style={[
+        styles.iconText, 
+        { color: focused ? themeColors.primary : themeColors.inactive },
+        focused && { fontWeight: 'bold' }
+      ]}>
+        {name}
+      </Text>
     </View>
   );
 };
@@ -91,15 +128,18 @@ const SettingsStack = () => {
 
 // 主应用导航（已登录）
 const MainAppNavigator = () => {
+  const { isDarkMode } = useTheme();
+  const themeColors = isDarkMode ? darkTheme : lightTheme;
+  
   return (
     <Tab.Navigator
       screenOptions={{
-        tabBarActiveTintColor: '#3498db',
-        tabBarInactiveTintColor: '#95a5a6',
+        tabBarActiveTintColor: themeColors.primary,
+        tabBarInactiveTintColor: themeColors.inactive,
         tabBarStyle: {
-          backgroundColor: 'white',
+          backgroundColor: themeColors.tabBar,
           borderTopWidth: 1,
-          borderTopColor: '#f0f0f0',
+          borderTopColor: themeColors.border,
           paddingTop: 5,
           height: 60,
         },
@@ -155,14 +195,18 @@ const MainAppNavigator = () => {
 // Main app navigator
 const AppNavigator = () => {
   const { isLoading, isLoggedIn, user } = useAuth();
+  const { isDarkMode } = useTheme();
 
-  console.log('AppNavigator渲染:', { isLoading, isLoggedIn, user });
+  console.log('AppNavigator渲染:', { isLoading, isLoggedIn, user, isDarkMode });
+  
+  const themeColors = isDarkMode ? darkTheme : lightTheme;
+  const navigationTheme = isDarkMode ? customDarkTheme : customLightTheme;
 
   if (isLoading) {
     return (
-      <View style={styles.loadingContainer}>
-        <ActivityIndicator size="large" color="#3498db" />
-        <Text style={styles.loadingText}>Loading...</Text>
+      <View style={[styles.loadingContainer, { backgroundColor: themeColors.background }]}>
+        <ActivityIndicator size="large" color={themeColors.primary} />
+        <Text style={[styles.loadingText, { color: themeColors.primary }]}>Loading...</Text>
       </View>
     );
   }
@@ -176,6 +220,7 @@ const AppNavigator = () => {
 
   return (
     <NavigationContainer
+      theme={navigationTheme}
       onStateChange={(state) => console.log('导航状态变化:', state)}
       onReady={() => console.log('导航容器已准备好')}
     >
@@ -192,41 +237,29 @@ const styles = StyleSheet.create({
     alignItems: 'center',
     borderRadius: 15,
   },
-  iconContainerFocused: {
-    backgroundColor: 'rgba(52, 152, 219, 0.1)',
-  },
   iconText: {
     fontSize: 12,
-    color: '#95a5a6',
-  },
-  iconTextFocused: {
-    color: '#3498db',
-    fontWeight: 'bold',
   },
   loadingContainer: {
     flex: 1,
     justifyContent: 'center',
     alignItems: 'center',
-    backgroundColor: '#ffffff',
   },
   authContainer: {
     flex: 1,
     justifyContent: 'center',
     alignItems: 'center',
     padding: 20,
-    backgroundColor: '#ffffff',
   },
   authTitle: {
     fontSize: 24,
     fontWeight: 'bold',
     marginBottom: 20,
-    color: '#3498db',
   },
   loadingText: {
     marginTop: 10,
     fontSize: 16,
     fontWeight: 'bold',
-    color: '#3498db',
   },
 });
 

@@ -1,6 +1,7 @@
 import React, { useState } from 'react';
 import { View, Text, StyleSheet, ScrollView, ActivityIndicator, RefreshControl, TouchableOpacity, Dimensions } from 'react-native';
 import { incomeAPI, expenseAPI } from '../utils/api';
+import { useTheme, lightTheme, darkTheme } from '../utils/ThemeContext';
 import { useFocusEffect } from '@react-navigation/native';
 import ImportTransactions from '../components/ImportTransactions';
 import { BarChart } from 'react-native-chart-kit';
@@ -9,6 +10,8 @@ import { BarChart } from 'react-native-chart-kit';
 const screenWidth = Dimensions.get('window').width - 30; // Account for margins
 
 const StatisticsScreen = () => {
+  const { isDarkMode } = useTheme();
+  const themeColors = isDarkMode ? darkTheme : lightTheme;
   const [isLoading, setIsLoading] = useState(true);
   const [isRefreshing, setIsRefreshing] = useState(false);
   const [incomeData, setIncomeData] = useState({
@@ -328,29 +331,6 @@ const StatisticsScreen = () => {
     }, []) // Intentionally empty dependency array - we want this to run only on focus
   );
 
-  // Pull to refresh
-  const onRefresh = () => {
-    setIsRefreshing(true);
-    fetchData();
-  };
-
-  // Format amount
-  const formatAmount = (amount: number | undefined | null) => {
-    // Check for undefined, null, or NaN
-    if (amount === undefined || amount === null || isNaN(amount)) {
-      console.log('Invalid amount detected:', amount);
-      return '$0.00';
-    }
-    try {
-      // Ensure amount is a number
-      const numAmount = Number(amount);
-      return `$${numAmount.toFixed(2)}`;
-    } catch (error) {
-      console.error('Format amount error:', error, 'Amount value:', amount);
-      return '$0.00';
-    }
-  };
-
   // Get chart data for current tab
   const getChartData = () => {
     const data = activeTab === 'income' ? incomeData.categories : expenseData.categories;
@@ -372,14 +352,15 @@ const StatisticsScreen = () => {
 
   // Chart configuration
   const chartConfig = {
-    backgroundGradientFrom: '#ffffff',
-    backgroundGradientTo: '#ffffff',
+    backgroundGradientFrom: themeColors.card,
+    backgroundGradientTo: themeColors.card,
     color: (opacity = 1) => activeTab === 'income' 
       ? `rgba(46, 204, 113, ${opacity})` // Green for income
       : `rgba(231, 76, 60, ${opacity})`, // Red for expenses
     strokeWidth: 2,
     barPercentage: 0.7,
     decimalPlaces: 0,
+    labelColor: () => themeColors.primaryText,
   };
 
   // Render category list with percentage bars
@@ -389,7 +370,9 @@ const StatisticsScreen = () => {
     if (categories.length === 0) {
       return (
         <View style={styles.emptyState}>
-          <Text style={styles.emptyStateText}>No {activeTab} data available</Text>
+          <Text style={[styles.emptyStateText, { color: themeColors.secondaryText }]}>
+            No {activeTab} data available
+          </Text>
         </View>
       );
     }
@@ -399,10 +382,14 @@ const StatisticsScreen = () => {
         {categories.map((category, index) => (
           <View key={index} style={styles.categoryItem}>
             <View style={styles.categoryHeader}>
-              <Text style={styles.categoryName}>{category.name}</Text>
-              <Text style={styles.categoryAmount}>${category.amount.toFixed(2)}</Text>
+              <Text style={[styles.categoryName, { color: themeColors.primaryText }]}>
+                {category.name}
+              </Text>
+              <Text style={[styles.categoryAmount, { color: themeColors.primaryText }]}>
+                ${category.amount.toFixed(2)}
+              </Text>
             </View>
-            <View style={styles.percentageBarContainer}>
+            <View style={[styles.percentageBarContainer, { backgroundColor: themeColors.border }]}>
               <View 
                 style={[
                   styles.percentageBar, 
@@ -413,7 +400,9 @@ const StatisticsScreen = () => {
                 ]} 
               />
             </View>
-            <Text style={styles.percentageText}>{category.percentage}% of total</Text>
+            <Text style={[styles.percentageText, { color: themeColors.secondaryText }]}>
+              {category.percentage}% of total
+            </Text>
           </View>
         ))}
       </View>
@@ -422,31 +411,39 @@ const StatisticsScreen = () => {
 
   if (isLoading) {
     return (
-      <View style={styles.loadingContainer}>
-        <ActivityIndicator size="large" color="#3498db" />
+      <View style={[styles.loadingContainer, { backgroundColor: themeColors.background }]}>
+        <ActivityIndicator size="large" color={themeColors.primary} />
       </View>
     );
   }
 
   return (
     <ScrollView 
-      style={styles.container}
+      style={[styles.container, { backgroundColor: themeColors.background }]}
       refreshControl={
-        <RefreshControl refreshing={isRefreshing} onRefresh={() => {
-          setIsRefreshing(true);
-          fetchData().finally(() => setIsRefreshing(false));
-        }} />
+        <RefreshControl 
+          refreshing={isRefreshing} 
+          onRefresh={() => {
+            setIsRefreshing(true);
+            fetchData().finally(() => setIsRefreshing(false));
+          }}
+          colors={[themeColors.primary]}
+          tintColor={themeColors.primary}
+        />
       }
     >
-      <View style={styles.header}>
+      <View style={[styles.header, { backgroundColor: themeColors.header }]}>
         <Text style={styles.headerTitle}>Finance Statistics</Text>
       </View>
       
       {error && (
-        <View style={styles.errorContainer}>
-          <Text style={styles.errorText}>{error}</Text>
+        <View style={[styles.errorContainer, { 
+          backgroundColor: isDarkMode ? 'rgba(231, 76, 60, 0.2)' : '#ffecec',
+          borderLeftColor: themeColors.danger
+        }]}>
+          <Text style={[styles.errorText, { color: themeColors.danger }]}>{error}</Text>
           <TouchableOpacity 
-            style={styles.retryButton} 
+            style={[styles.retryButton, { backgroundColor: themeColors.danger }]} 
             onPress={() => {
               setIsLoading(true);
               fetchData().finally(() => setIsLoading(false));
@@ -458,44 +455,97 @@ const StatisticsScreen = () => {
       )}
 
       <View style={styles.summaryContainer}>
-        <View style={styles.summaryCard}>
-          <Text style={styles.summaryValue}>${incomeData.total.toFixed(2)}</Text>
-          <Text style={styles.summaryLabel}>Total Income</Text>
+        <View style={[styles.summaryCard, { 
+          backgroundColor: themeColors.card,
+          shadowColor: isDarkMode ? 'rgba(0, 0, 0, 0.5)' : '#000',
+        }]}>
+          <Text style={[styles.summaryValue, { color: themeColors.primaryText }]}>
+            ${incomeData.total.toFixed(2)}
+          </Text>
+          <Text style={[styles.summaryLabel, { color: themeColors.secondaryText }]}>
+            Total Income
+          </Text>
         </View>
-        <View style={styles.summaryCard}>
-          <Text style={styles.summaryValue}>${expenseData.total.toFixed(2)}</Text>
-          <Text style={styles.summaryLabel}>Total Expenses</Text>
+        <View style={[styles.summaryCard, { 
+          backgroundColor: themeColors.card,
+          shadowColor: isDarkMode ? 'rgba(0, 0, 0, 0.5)' : '#000',
+        }]}>
+          <Text style={[styles.summaryValue, { color: themeColors.primaryText }]}>
+            ${expenseData.total.toFixed(2)}
+          </Text>
+          <Text style={[styles.summaryLabel, { color: themeColors.secondaryText }]}>
+            Total Expenses
+          </Text>
         </View>
-        <View style={styles.summaryCard}>
-          <Text style={[styles.summaryValue, balance >= 0 ? styles.positiveBalance : styles.negativeBalance]}>
+        <View style={[styles.summaryCard, { 
+          backgroundColor: themeColors.card,
+          shadowColor: isDarkMode ? 'rgba(0, 0, 0, 0.5)' : '#000',
+        }]}>
+          <Text style={[
+            styles.summaryValue, 
+            balance >= 0 ? styles.positiveBalance : styles.negativeBalance
+          ]}>
             ${balance.toFixed(2)}
           </Text>
-          <Text style={styles.summaryLabel}>Balance</Text>
+          <Text style={[styles.summaryLabel, { color: themeColors.secondaryText }]}>
+            Balance
+          </Text>
         </View>
       </View>
 
-      <View style={styles.savingContainer}>
-        <Text style={styles.savingLabel}>Saving Rate:</Text>
-        <Text style={styles.savingValue}>{savingsRate}%</Text>
+      <View style={[styles.savingContainer, { 
+        backgroundColor: themeColors.card,
+        shadowColor: isDarkMode ? 'rgba(0, 0, 0, 0.5)' : '#000',
+      }]}>
+        <Text style={[styles.savingLabel, { color: themeColors.primaryText }]}>
+          Saving Rate:
+        </Text>
+        <Text style={[styles.savingValue, { color: themeColors.primary }]}>
+          {savingsRate}%
+        </Text>
       </View>
 
-      <View style={styles.tabContainer}>
+      <View style={[styles.tabContainer, { 
+        backgroundColor: themeColors.card,
+        shadowColor: isDarkMode ? 'rgba(0, 0, 0, 0.5)' : '#000',
+      }]}>
         <TouchableOpacity 
-          style={[styles.tab, activeTab === 'income' && styles.activeTab]} 
+          style={[
+            styles.tab, 
+            activeTab === 'income' && [styles.activeTab, { backgroundColor: themeColors.primary }]
+          ]} 
           onPress={() => setActiveTab('income')}
         >
-          <Text style={[styles.tabText, activeTab === 'income' && styles.activeTabText]}>Income</Text>
+          <Text style={[
+            styles.tabText, 
+            { color: themeColors.primaryText },
+            activeTab === 'income' && styles.activeTabText
+          ]}>
+            Income
+          </Text>
         </TouchableOpacity>
         <TouchableOpacity 
-          style={[styles.tab, activeTab === 'expense' && styles.activeTab]} 
+          style={[
+            styles.tab, 
+            activeTab === 'expense' && [styles.activeTab, { backgroundColor: themeColors.primary }]
+          ]} 
           onPress={() => setActiveTab('expense')}
         >
-          <Text style={[styles.tabText, activeTab === 'expense' && styles.activeTabText]}>Expenses</Text>
+          <Text style={[
+            styles.tabText, 
+            { color: themeColors.primaryText },
+            activeTab === 'expense' && styles.activeTabText
+          ]}>
+            Expenses
+          </Text>
         </TouchableOpacity>
       </View>
 
-      <View style={styles.chartContainer}>
-        <Text style={styles.chartTitle}>
+      <View style={[styles.chartContainer, { 
+        backgroundColor: themeColors.card,
+        shadowColor: isDarkMode ? 'rgba(0, 0, 0, 0.5)' : '#000',
+      }]}>
+        <Text style={[styles.chartTitle, { color: themeColors.primaryText }]}>
           {activeTab === 'income' ? 'Income' : 'Expense'} Distribution
         </Text>
         {(activeTab === 'income' ? incomeData.categories : expenseData.categories).length > 0 ? (
@@ -513,22 +563,27 @@ const StatisticsScreen = () => {
           />
         ) : (
           <View style={styles.emptyChart}>
-            <Text style={styles.emptyStateText}>
+            <Text style={[styles.emptyStateText, { color: themeColors.secondaryText }]}>
               No {activeTab} data to display
             </Text>
           </View>
         )}
       </View>
 
-      <View style={styles.categoryContainer}>
-        <Text style={styles.categoryTitle}>
+      <View style={[styles.categoryContainer, { 
+        backgroundColor: themeColors.card,
+        shadowColor: isDarkMode ? 'rgba(0, 0, 0, 0.5)' : '#000',
+      }]}>
+        <Text style={[styles.categoryTitle, { color: themeColors.primaryText }]}>
           {activeTab === 'income' ? 'Income' : 'Expense'} Categories
         </Text>
         {renderCategoryList()}
       </View>
 
       <View style={styles.section}>
-        <Text style={styles.sectionTitle}>Import Transactions</Text>
+        <Text style={[styles.sectionTitle, { color: themeColors.primaryText }]}>
+          Import Transactions
+        </Text>
         <ImportTransactions onImportSuccess={() => {
           setIsLoading(true);
           fetchData().finally(() => setIsLoading(false));

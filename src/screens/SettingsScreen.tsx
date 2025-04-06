@@ -1,13 +1,17 @@
 import React, { useState } from 'react';
 import { View, Text, StyleSheet, Switch, TouchableOpacity, ScrollView, Alert, ActivityIndicator } from 'react-native';
 import { useAuth } from '../utils/AuthContext';
+import { useTheme, lightTheme, darkTheme } from '../utils/ThemeContext';
 
 const SettingsScreen = () => {
   const { user, logout } = useAuth();
-  const [darkMode, setDarkMode] = useState(false);
+  const { isDarkMode, toggleTheme } = useTheme();
   const [notifications, setNotifications] = useState(true);
   const [currency, setCurrency] = useState('USD');
   const [isLoading, setIsLoading] = useState(false);
+  
+  // 获取当前主题颜色
+  const themeColors = isDarkMode ? darkTheme : lightTheme;
 
   const handleCurrencyChange = (newCurrency: string) => {
     setCurrency(newCurrency);
@@ -45,21 +49,32 @@ const SettingsScreen = () => {
     }
   };
 
+  // 处理主题切换
+  const handleThemeToggle = () => {
+    console.log('切换主题模式，当前模式:', isDarkMode ? 'dark' : 'light');
+    toggleTheme();
+  };
+
   return (
-    <ScrollView style={styles.container}>
-      <View style={styles.header}>
+    <ScrollView 
+      style={[
+        styles.container, 
+        { backgroundColor: themeColors.background }
+      ]}
+    >
+      <View style={[styles.header, { backgroundColor: themeColors.header }]}>
         <Text style={styles.headerTitle}>Settings</Text>
       </View>
 
       {user && (
-        <View style={styles.section}>
-          <Text style={styles.sectionTitle}>User Information</Text>
+        <View style={[styles.section, { backgroundColor: themeColors.card }]}>
+          <Text style={[styles.sectionTitle, { color: themeColors.primaryText }]}>User Information</Text>
           <View style={styles.userInfo}>
-            <Text style={styles.userName}>{user.username}</Text>
-            <Text style={styles.userEmail}>{user.email}</Text>
+            <Text style={[styles.userName, { color: themeColors.primaryText }]}>{user.username}</Text>
+            <Text style={[styles.userEmail, { color: themeColors.secondaryText }]}>{user.email}</Text>
           </View>
           <TouchableOpacity 
-            style={styles.logoutButton} 
+            style={[styles.logoutButton, { backgroundColor: themeColors.primary }]} 
             onPress={handleLogout}
             disabled={isLoading}
           >
@@ -72,25 +87,25 @@ const SettingsScreen = () => {
         </View>
       )}
 
-      <View style={styles.section}>
-        <Text style={styles.sectionTitle}>Appearance</Text>
+      <View style={[styles.section, { backgroundColor: themeColors.card }]}>
+        <Text style={[styles.sectionTitle, { color: themeColors.primaryText }]}>Appearance</Text>
         
         <View style={styles.settingItem}>
-          <Text style={styles.settingLabel}>Dark Mode</Text>
+          <Text style={[styles.settingLabel, { color: themeColors.primaryText }]}>Dark Mode</Text>
           <Switch
-            value={darkMode}
-            onValueChange={setDarkMode}
+            value={isDarkMode}
+            onValueChange={handleThemeToggle}
             trackColor={{ false: '#767577', true: '#81b0ff' }}
-            thumbColor={darkMode ? '#f5dd4b' : '#f4f3f4'}
+            thumbColor={isDarkMode ? '#f5dd4b' : '#f4f3f4'}
           />
         </View>
       </View>
 
-      <View style={styles.section}>
-        <Text style={styles.sectionTitle}>Preferences</Text>
+      <View style={[styles.section, { backgroundColor: themeColors.card }]}>
+        <Text style={[styles.sectionTitle, { color: themeColors.primaryText }]}>Preferences</Text>
         
         <View style={styles.settingItem}>
-          <Text style={styles.settingLabel}>Notifications</Text>
+          <Text style={[styles.settingLabel, { color: themeColors.primaryText }]}>Notifications</Text>
           <Switch
             value={notifications}
             onValueChange={setNotifications}
@@ -99,21 +114,23 @@ const SettingsScreen = () => {
           />
         </View>
 
-        <Text style={styles.settingLabel}>Currency</Text>
+        <Text style={[styles.settingLabel, { color: themeColors.primaryText }]}>Currency</Text>
         <View style={styles.currencyContainer}>
           {['USD', 'EUR', 'GBP', 'JPY', 'CNY'].map((curr) => (
             <TouchableOpacity
               key={curr}
               style={[
                 styles.currencyButton,
-                currency === curr && styles.currencyButtonActive,
+                { backgroundColor: themeColors.border },
+                currency === curr && { backgroundColor: themeColors.primary },
               ]}
               onPress={() => handleCurrencyChange(curr)}
             >
               <Text
                 style={[
                   styles.currencyButtonText,
-                  currency === curr && styles.currencyButtonTextActive,
+                  { color: themeColors.secondaryText },
+                  currency === curr && { color: 'white' },
                 ]}
               >
                 {curr}
@@ -123,18 +140,21 @@ const SettingsScreen = () => {
         </View>
       </View>
 
-      <View style={styles.section}>
-        <Text style={styles.sectionTitle}>Data Management</Text>
+      <View style={[styles.section, { backgroundColor: themeColors.card }]}>
+        <Text style={[styles.sectionTitle, { color: themeColors.primaryText }]}>Data Management</Text>
         
-        <TouchableOpacity style={styles.dangerButton} onPress={handleClearData}>
+        <TouchableOpacity 
+          style={[styles.dangerButton, { backgroundColor: themeColors.danger }]} 
+          onPress={handleClearData}
+        >
           <Text style={styles.dangerButtonText}>Clear All Data</Text>
         </TouchableOpacity>
       </View>
 
-      <View style={styles.section}>
-        <Text style={styles.sectionTitle}>About</Text>
-        <Text style={styles.aboutText}>JCEco Finance App</Text>
-        <Text style={styles.versionText}>Version 1.0.0</Text>
+      <View style={[styles.section, { backgroundColor: themeColors.card }]}>
+        <Text style={[styles.sectionTitle, { color: themeColors.primaryText }]}>About</Text>
+        <Text style={[styles.aboutText, { color: themeColors.primaryText }]}>JCEco Finance App</Text>
+        <Text style={[styles.versionText, { color: themeColors.secondaryText }]}>Version 1.0.0</Text>
       </View>
     </ScrollView>
   );
@@ -143,11 +163,9 @@ const SettingsScreen = () => {
 const styles = StyleSheet.create({
   container: {
     flex: 1,
-    backgroundColor: '#f5f5f5',
   },
   header: {
     padding: 20,
-    backgroundColor: '#34495e',
   },
   headerTitle: {
     fontSize: 24,
@@ -158,7 +176,6 @@ const styles = StyleSheet.create({
     margin: 15,
     marginTop: 5,
     padding: 15,
-    backgroundColor: 'white',
     borderRadius: 10,
     elevation: 2,
     shadowColor: '#000',
@@ -182,10 +199,8 @@ const styles = StyleSheet.create({
   },
   userEmail: {
     fontSize: 16,
-    color: '#666',
   },
   logoutButton: {
-    backgroundColor: '#3498db',
     padding: 15,
     borderRadius: 5,
     alignItems: 'center',
@@ -217,21 +232,13 @@ const styles = StyleSheet.create({
     paddingVertical: 8,
     paddingHorizontal: 16,
     borderRadius: 20,
-    backgroundColor: '#f0f0f0',
     marginRight: 10,
     marginBottom: 10,
   },
-  currencyButtonActive: {
-    backgroundColor: '#3498db',
-  },
   currencyButtonText: {
-    color: '#333',
-  },
-  currencyButtonTextActive: {
-    color: 'white',
+    fontWeight: '500',
   },
   dangerButton: {
-    backgroundColor: '#e74c3c',
     padding: 15,
     borderRadius: 5,
     alignItems: 'center',
@@ -248,7 +255,6 @@ const styles = StyleSheet.create({
   },
   versionText: {
     fontSize: 14,
-    color: '#666',
     textAlign: 'center',
   },
 });

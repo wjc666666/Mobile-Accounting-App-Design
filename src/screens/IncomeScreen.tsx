@@ -1,15 +1,64 @@
 import React, { useState } from 'react';
 import { View, Text, StyleSheet, TextInput, TouchableOpacity, ScrollView, Alert, ActivityIndicator } from 'react-native';
 import { incomeAPI } from '../utils/api';
+import { useTheme, lightTheme, darkTheme } from '../utils/ThemeContext';
+import { useFocusEffect } from '@react-navigation/native';
+
+interface IncomeRecord {
+  id: number;
+  amount: number;
+  category: string;
+  date: string;
+  description: string;
+}
 
 const IncomeScreen = () => {
+  const { isDarkMode } = useTheme();
+  const themeColors = isDarkMode ? darkTheme : lightTheme;
   const [amount, setAmount] = useState('');
   const [description, setDescription] = useState('');
   const [category, setCategory] = useState('Salary');
   const [date, setDate] = useState(new Date().toISOString().split('T')[0]);
   const [isLoading, setIsLoading] = useState(false);
+  const [incomeHistory, setIncomeHistory] = useState<IncomeRecord[]>([]);
+  const [isLoadingHistory, setIsLoadingHistory] = useState(false);
 
   const categories = ['Salary', 'Bonus', 'Investment', 'Freelance', 'Other'];
+
+  // 获取历史记录
+  const fetchIncomeHistory = async () => {
+    setIsLoadingHistory(true);
+    try {
+      const data = await incomeAPI.getIncomes();
+      if (Array.isArray(data)) {
+        // 处理数据，确保金额是数字
+        const processedData = data.map(income => ({
+          ...income,
+          amount: typeof income.amount === 'string' ? parseFloat(income.amount) : income.amount
+        }));
+        // 按日期排序，最新的在前面
+        processedData.sort((a, b) => new Date(b.date).getTime() - new Date(a.date).getTime());
+        setIncomeHistory(processedData);
+      } else {
+        setIncomeHistory([]);
+      }
+    } catch (error) {
+      console.error('Failed to fetch income history:', error);
+      Alert.alert('Error', 'Failed to load income history');
+    } finally {
+      setIsLoadingHistory(false);
+    }
+  };
+
+  // 组件挂载和页面聚焦时获取历史记录
+  useFocusEffect(
+    React.useCallback(() => {
+      fetchIncomeHistory();
+      return () => {
+        // 清理函数
+      };
+    }, [])
+  );
 
   const handleAddIncome = async () => {
     if (!amount || isNaN(Number(amount))) {
@@ -34,6 +83,9 @@ const IncomeScreen = () => {
       
       Alert.alert('Success', 'Income record added');
       
+      // 重新获取历史记录以刷新列表
+      fetchIncomeHistory();
+      
       // Reset form
       setAmount('');
       setDescription('');
@@ -47,49 +99,76 @@ const IncomeScreen = () => {
     }
   };
 
+  // 渲染历史记录项
+  const renderHistoryItem = ({ item }: { item: IncomeRecord }) => (
+    <View style={[styles.historyItem, { backgroundColor: themeColors.card, borderBottomColor: themeColors.border }]}>
+      <View style={styles.historyItemHeader}>
+        <Text style={[styles.historyCategory, { color: themeColors.primaryText }]}>{item.category}</Text>
+        <Text style={[styles.historyAmount, { color: themeColors.success }]}>+${item.amount.toFixed(2)}</Text>
+      </View>
+      <Text style={[styles.historyDescription, { color: themeColors.primaryText }]}>{item.description}</Text>
+      <Text style={[styles.historyDate, { color: themeColors.secondaryText }]}>{new Date(item.date).toLocaleDateString()}</Text>
+    </View>
+  );
+
   return (
-    <ScrollView style={styles.container}>
-      <View style={styles.header}>
+    <ScrollView style={[styles.container, { backgroundColor: themeColors.background }]}>
+      <View style={[styles.header, { backgroundColor: themeColors.success }]}>
         <Text style={styles.headerTitle}>Add Income</Text>
       </View>
 
-      <View style={styles.form}>
+      <View style={[styles.form, { 
+        backgroundColor: themeColors.card,
+        shadowColor: isDarkMode ? 'rgba(0, 0, 0, 0.5)' : '#000',
+      }]}>
         <View style={styles.formGroup}>
-          <Text style={styles.label}>Amount ($)</Text>
+          <Text style={[styles.label, { color: themeColors.primaryText }]}>Amount ($)</Text>
           <TextInput
-            style={styles.input}
+            style={[styles.input, { 
+              borderColor: themeColors.border,
+              backgroundColor: isDarkMode ? themeColors.card : '#fff',
+              color: themeColors.primaryText
+            }]}
             value={amount}
             onChangeText={setAmount}
             placeholder="0.00"
+            placeholderTextColor={themeColors.secondaryText}
             keyboardType="numeric"
           />
         </View>
 
         <View style={styles.formGroup}>
-          <Text style={styles.label}>Description</Text>
+          <Text style={[styles.label, { color: themeColors.primaryText }]}>Description</Text>
           <TextInput
-            style={styles.input}
+            style={[styles.input, { 
+              borderColor: themeColors.border,
+              backgroundColor: isDarkMode ? themeColors.card : '#fff',
+              color: themeColors.primaryText
+            }]}
             value={description}
             onChangeText={setDescription}
             placeholder="Income description"
+            placeholderTextColor={themeColors.secondaryText}
           />
         </View>
 
         <View style={styles.formGroup}>
-          <Text style={styles.label}>Category</Text>
+          <Text style={[styles.label, { color: themeColors.primaryText }]}>Category</Text>
           <View style={styles.categoryContainer}>
             {categories.map((cat) => (
               <TouchableOpacity
                 key={cat}
                 style={[
                   styles.categoryButton,
-                  category === cat && styles.categoryButtonActive,
+                  { backgroundColor: isDarkMode ? themeColors.border : '#f0f0f0' },
+                  category === cat && [styles.categoryButtonActive, { backgroundColor: themeColors.success }],
                 ]}
                 onPress={() => setCategory(cat)}
               >
                 <Text
                   style={[
                     styles.categoryButtonText,
+                    { color: themeColors.primaryText },
                     category === cat && styles.categoryButtonTextActive,
                   ]}
                 >
@@ -101,17 +180,26 @@ const IncomeScreen = () => {
         </View>
 
         <View style={styles.formGroup}>
-          <Text style={styles.label}>Date</Text>
+          <Text style={[styles.label, { color: themeColors.primaryText }]}>Date</Text>
           <TextInput
-            style={styles.input}
+            style={[styles.input, { 
+              borderColor: themeColors.border,
+              backgroundColor: isDarkMode ? themeColors.card : '#fff',
+              color: themeColors.primaryText
+            }]}
             value={date}
             onChangeText={setDate}
             placeholder="YYYY-MM-DD"
+            placeholderTextColor={themeColors.secondaryText}
           />
         </View>
 
         <TouchableOpacity 
-          style={[styles.addButton, isLoading && styles.addButtonDisabled]} 
+          style={[
+            styles.addButton, 
+            { backgroundColor: themeColors.success },
+            isLoading && [styles.addButtonDisabled, { backgroundColor: themeColors.secondaryText }]
+          ]} 
           onPress={handleAddIncome}
           disabled={isLoading}
         >
@@ -121,6 +209,28 @@ const IncomeScreen = () => {
             <Text style={styles.addButtonText}>Add Income</Text>
           )}
         </TouchableOpacity>
+      </View>
+
+      {/* 历史记录部分 */}
+      <View style={[styles.historyContainer, { backgroundColor: themeColors.card }]}>
+        <Text style={[styles.historyTitle, { color: themeColors.primaryText }]}>Income History</Text>
+        
+        {isLoadingHistory ? (
+          <View style={styles.loadingContainer}>
+            <ActivityIndicator size="small" color={themeColors.primary} />
+            <Text style={[styles.loadingText, { color: themeColors.secondaryText }]}>Loading history...</Text>
+          </View>
+        ) : incomeHistory.length > 0 ? (
+          incomeHistory.map((item) => (
+            <View key={item.id}>
+              {renderHistoryItem({ item })}
+            </View>
+          ))
+        ) : (
+          <View style={styles.emptyState}>
+            <Text style={[styles.emptyStateText, { color: themeColors.secondaryText }]}>No income records found</Text>
+          </View>
+        )}
       </View>
     </ScrollView>
   );
@@ -203,6 +313,68 @@ const styles = StyleSheet.create({
     fontSize: 16,
     fontWeight: 'bold',
   },
+  // 历史记录样式
+  historyContainer: {
+    margin: 15,
+    padding: 15,
+    backgroundColor: 'white',
+    borderRadius: 10,
+    elevation: 2,
+    shadowColor: '#000',
+    shadowOffset: { width: 0, height: 2 },
+    shadowOpacity: 0.1,
+    shadowRadius: 4,
+  },
+  historyTitle: {
+    fontSize: 18,
+    fontWeight: 'bold',
+    marginBottom: 15,
+  },
+  historyItem: {
+    paddingVertical: 12,
+    borderBottomWidth: 1,
+    borderBottomColor: '#f0f0f0',
+    marginBottom: 8,
+  },
+  historyItemHeader: {
+    flexDirection: 'row',
+    justifyContent: 'space-between',
+    alignItems: 'center',
+  },
+  historyCategory: {
+    fontSize: 16,
+    fontWeight: '500',
+  },
+  historyAmount: {
+    fontSize: 16,
+    fontWeight: 'bold',
+    color: '#2ecc71',
+  },
+  historyDescription: {
+    fontSize: 14,
+    marginTop: 4,
+  },
+  historyDate: {
+    fontSize: 12,
+    color: '#999',
+    marginTop: 4,
+  },
+  loadingContainer: {
+    padding: 20,
+    alignItems: 'center',
+  },
+  loadingText: {
+    marginTop: 10,
+    color: '#999',
+  },
+  emptyState: {
+    padding: 20,
+    alignItems: 'center',
+  },
+  emptyStateText: {
+    color: '#999',
+    fontSize: 16,
+  }
 });
 
 export default IncomeScreen; 

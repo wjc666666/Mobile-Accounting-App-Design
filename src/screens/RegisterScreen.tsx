@@ -2,6 +2,7 @@ import React, { useState } from 'react';
 import { View, StyleSheet, Text, TouchableOpacity, Alert, TextInput, ActivityIndicator } from 'react-native';
 // import { TextInput, Button } from 'react-native-paper';
 import { useAuth } from '../utils/AuthContext';
+import { useTheme, lightTheme, darkTheme } from '../utils/ThemeContext';
 
 interface RegisterScreenProps {
   navigation: any;
@@ -14,6 +15,8 @@ const RegisterScreen: React.FC<RegisterScreenProps> = ({ navigation }) => {
   const [confirmPassword, setConfirmPassword] = useState('');
   const [isLoading, setIsLoading] = useState(false);
   const { register } = useAuth();
+  const { isDarkMode } = useTheme();
+  const themeColors = isDarkMode ? darkTheme : lightTheme;
 
   const handleRegister = async () => {
     if (!username || !email || !password || !confirmPassword) {
@@ -38,22 +41,38 @@ const RegisterScreen: React.FC<RegisterScreenProps> = ({ navigation }) => {
   };
 
   return (
-    <View style={styles.container}>
-      <Text style={styles.title}>Create Account</Text>
-      <Text style={styles.subtitle}>Start managing your finances</Text>
+    <View style={[styles.container, { backgroundColor: themeColors.background }]}>
+      <Text style={[styles.title, { color: themeColors.primary }]}>Create Account</Text>
+      <Text style={[styles.subtitle, { color: themeColors.secondaryText }]}>Start managing your finances</Text>
 
       <View style={styles.form}>
         <TextInput
-          style={styles.input}
+          style={[
+            styles.input, 
+            { 
+              backgroundColor: isDarkMode ? themeColors.card : '#f9f9f9',
+              borderColor: themeColors.border,
+              color: themeColors.primaryText
+            }
+          ]}
           placeholder="Username"
+          placeholderTextColor={themeColors.secondaryText}
           value={username}
           onChangeText={setUsername}
           autoCapitalize="none"
         />
 
         <TextInput
-          style={styles.input}
+          style={[
+            styles.input, 
+            { 
+              backgroundColor: isDarkMode ? themeColors.card : '#f9f9f9',
+              borderColor: themeColors.border,
+              color: themeColors.primaryText
+            }
+          ]}
           placeholder="Email"
+          placeholderTextColor={themeColors.secondaryText}
           value={email}
           onChangeText={setEmail}
           keyboardType="email-address"
@@ -61,23 +80,39 @@ const RegisterScreen: React.FC<RegisterScreenProps> = ({ navigation }) => {
         />
 
         <TextInput
-          style={styles.input}
+          style={[
+            styles.input, 
+            { 
+              backgroundColor: isDarkMode ? themeColors.card : '#f9f9f9',
+              borderColor: themeColors.border,
+              color: themeColors.primaryText
+            }
+          ]}
           placeholder="Password"
+          placeholderTextColor={themeColors.secondaryText}
           value={password}
           onChangeText={setPassword}
           secureTextEntry
         />
 
         <TextInput
-          style={styles.input}
+          style={[
+            styles.input, 
+            { 
+              backgroundColor: isDarkMode ? themeColors.card : '#f9f9f9',
+              borderColor: themeColors.border,
+              color: themeColors.primaryText
+            }
+          ]}
           placeholder="Confirm Password"
+          placeholderTextColor={themeColors.secondaryText}
           value={confirmPassword}
           onChangeText={setConfirmPassword}
           secureTextEntry
         />
 
         <TouchableOpacity
-          style={styles.button}
+          style={[styles.button, { backgroundColor: themeColors.primary }]}
           onPress={handleRegister}
           disabled={isLoading}
         >
@@ -89,9 +124,9 @@ const RegisterScreen: React.FC<RegisterScreenProps> = ({ navigation }) => {
         </TouchableOpacity>
 
         <View style={styles.loginContainer}>
-          <Text style={styles.loginText}>Already have an account?</Text>
+          <Text style={[styles.loginText, { color: themeColors.secondaryText }]}>Already have an account?</Text>
           <TouchableOpacity onPress={() => navigation.navigate('Login')}>
-            <Text style={styles.loginLink}>Login Now</Text>
+            <Text style={[styles.loginLink, { color: themeColors.primary }]}>Login Now</Text>
           </TouchableOpacity>
         </View>
       </View>
