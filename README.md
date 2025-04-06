@@ -17,7 +17,13 @@ JCEco/
 │   ├── components/         # Reusable UI components
 │   ├── navigation/         # Navigation configuration
 │   ├── screens/            # Application screens
+│   │   ├── FinanceAIScreen.tsx  # AI Financial Advisor screen
+│   │   └── ...             # Other screen components
 │   └── utils/              # Utility functions and native module bridges
+│       ├── api.ts          # API client and endpoints
+│       ├── ThemeContext.tsx  # Theme provider for dark/light mode
+│       ├── env.d.ts        # TypeScript definitions for env variables
+│       └── ...             # Other utility files
 ├── backend/                # Node.js backend
 │   ├── database/           # Database related files
 │   │   ├── alter_tables.sql  # SQL for altering tables
@@ -31,6 +37,8 @@ JCEco/
 │   ├── .env                # Environment variables (not in Git)
 │   ├── package.json        # Backend dependencies
 │   └── server.js           # Express server
+├── .env                    # Frontend environment variables (not in Git)
+├── babel.config.js         # Babel configuration with env support
 └── __tests__/              # Test files
 ```
 
@@ -64,6 +72,8 @@ JCEco/
 - **Multi-Currency Support**: Support for USD, EUR, GBP, JPY, CNY currencies
 - **Transaction Import**: Import transactions from payment apps (Alipay and WeChat)
 - **Native App Integration**: Launch Alipay and WeChat directly from the app (Android)
+- **AI Financial Analysis**: Get personalized financial insights and advice using AI technology
+- **Dark Mode Support**: Customize the app appearance with light and dark themes
 
 ## Installation and Setup
 
@@ -115,12 +125,24 @@ JCEco/
    npm install
    ```
 
-2. Start Metro server:
+2. Configure environment variables:
+   Create a `.env` file in the root directory with the following content:
+   ```
+   # OpenAI API Key (required for AI Financial Analysis feature)
+   OPENAI_API_KEY=your_openai_api_key
+   ```
+
+3. Install react-native-dotenv for environment variable support:
+   ```bash
+   npm install react-native-dotenv --save-dev
+   ```
+
+4. Start Metro server:
    ```bash
    npx react-native start
    ```
 
-3. Launch the application:
+5. Launch the application:
    ```bash
    # For Android
    npx react-native run-android
@@ -146,6 +168,44 @@ The payment app integration allows users to:
 2. Automatically categorize imported transactions
 3. Track spending across different payment platforms
 4. Maintain a unified view of finances across multiple payment methods
+
+## AI Financial Advisor
+
+The app includes an AI-powered financial analysis feature that provides personalized financial advice:
+
+### Features
+
+- **Financial Data Analysis**: AI analyzes your income, expenses, and saving patterns
+- **Personalized Recommendations**: Get tailored advice based on your financial situation
+- **Interactive Q&A**: Ask specific questions about your finances
+- **Suggested Questions**: Pre-defined questions to help you get started
+- **Intelligent Insights**: Identify spending patterns and potential savings opportunities
+
+### Implementation
+
+- Secure API integration with OpenAI for financial analysis
+- Environment variables used for API key management (.env)
+- Fallback to mock responses when API is unavailable
+- Dark mode compatibility for comfortable viewing in any lighting
+
+## Dark Mode
+
+The app includes a comprehensive theme system that supports both light and dark modes:
+
+### Features
+
+- **Theme Toggle**: Switch between light and dark themes in the Settings screen
+- **System Integration**: Option to follow the system theme settings
+- **Persistent Preference**: User theme preference is saved and persists across app restarts
+- **Consistent Experience**: All screens and components maintain consistent styling in both modes
+- **Enhanced Readability**: Optimized contrast and color palette for different lighting conditions
+
+### Implementation
+
+- Context API for managing theme state across the application
+- Styled components with theme-aware properties
+- Automatic theme switching based on device preferences
+- Custom navigation themes for consistent navigation experience
 
 ## API Documentation
 
@@ -215,6 +275,26 @@ The payment app integration allows users to:
 - **URL**: `/api/expenses`
 - **Method**: `GET`
 - **Auth**: JWT Token Required
+
+### Financial AI Analysis
+
+#### Analyze Financial Data
+- **URL**: `/api/finance/analyze`
+- **Method**: `POST`
+- **Auth**: JWT Token Required
+- **Body**:
+  ```json
+  {
+    "financialData": "string", // Financial summary data
+    "question": "string"       // User's financial question
+  }
+  ```
+- **Response**:
+  ```json
+  {
+    "analysis": "string"       // AI-generated financial analysis and advice
+  }
+  ```
 
 ### Transaction Import
 
