@@ -218,11 +218,11 @@ export const financialAIAPI = {
     try {
       console.log('Starting financial analysis...');
       
-      // For development/testing without using the API key
-      const useMockResponse = !OPENAI_API_KEY || OPENAI_API_KEY === '';
+      // Always use mock response for now - safer implementation
+      const useMockResponse = true;
+      console.log('Using mock response - default fallback');
       
       if (useMockResponse) {
-        console.log('Using mock response (no API key provided)');
         // Generate a mocked response based on the question
         let mockedResponse = '';
         
