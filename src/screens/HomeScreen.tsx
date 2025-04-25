@@ -1,10 +1,13 @@
 import React, { useState } from 'react';
-import { View, Text, StyleSheet, ScrollView, ActivityIndicator, RefreshControl, TouchableOpacity } from 'react-native';
+import { View, Text, StyleSheet, ScrollView, ActivityIndicator, RefreshControl, TouchableOpacity, Image } from 'react-native';
 import { incomeAPI, expenseAPI, budgetAPI } from '../utils/api';
 import { useAuth } from '../utils/AuthContext';
 import { useTheme, lightTheme, darkTheme } from '../utils/ThemeContext';
+import { useLocalization } from '../utils/LocalizationContext';
+import { useCurrency } from '../utils/CurrencyContext';
 import { useFocusEffect } from '@react-navigation/native';
 import { ProgressBar } from 'react-native-paper';
+import { APP_ICON } from '../assets/girl';
 
 interface Transaction {
   id: number;
@@ -17,12 +20,14 @@ interface Transaction {
 // Add this new component for budget analysis
 const BudgetAnalysisCard = ({ budgetData }: { budgetData: any }) => {
   const { isDarkMode } = useTheme();
+  const { t } = useLocalization();
+  const { formatAmount } = useCurrency();
   const themeColors = isDarkMode ? darkTheme : lightTheme;
   
   if (!budgetData || !budgetData.summary) {
     return (
       <View style={styles.emptyState}>
-        <Text style={[styles.emptyStateText, { color: themeColors.secondaryText }]}>No budget data available</Text>
+        <Text style={[styles.emptyStateText, { color: themeColors.secondaryText }]}>{t('noDataAvailable')}</Text>
       </View>
     );
   }
@@ -40,25 +45,25 @@ const BudgetAnalysisCard = ({ budgetData }: { budgetData: any }) => {
   return (
     <View style={[styles.budgetCard, { backgroundColor: themeColors.card }]}>
       <View style={styles.budgetHeader}>
-        <Text style={[styles.budgetTitle, { color: themeColors.primaryText }]}>Monthly Budget</Text>
+        <Text style={[styles.budgetTitle, { color: themeColors.primaryText }]}>{t('monthlyBudget')}</Text>
         <Text style={[styles.budgetPeriod, { color: themeColors.secondaryText }]}>
           {new Date(period.start).toLocaleDateString()} - {new Date(period.end).toLocaleDateString()}
         </Text>
       </View>
 
       <View style={styles.budgetRow}>
-        <Text style={[styles.budgetLabel, { color: themeColors.primaryText }]}>Income:</Text>
-        <Text style={styles.budgetIncomeValue}>${totalIncome.toFixed(2)}</Text>
+        <Text style={[styles.budgetLabel, { color: themeColors.primaryText }]}>{t('income')}:</Text>
+        <Text style={styles.budgetIncomeValue}>{formatAmount(totalIncome)}</Text>
       </View>
 
       <View style={styles.budgetRow}>
-        <Text style={[styles.budgetLabel, { color: themeColors.primaryText }]}>Expenses:</Text>
-        <Text style={styles.budgetExpenseValue}>${totalExpense.toFixed(2)}</Text>
+        <Text style={[styles.budgetLabel, { color: themeColors.primaryText }]}>{t('expenses')}:</Text>
+        <Text style={styles.budgetExpenseValue}>{formatAmount(totalExpense)}</Text>
       </View>
 
       <View style={styles.budgetProgressContainer}>
         <Text style={[styles.budgetProgressLabel, { color: themeColors.primaryText }]}>
-          Budget Used: {(budgetUtilization * 100).toFixed(0)}%
+          {t('budgetUsed')}: {(budgetUtilization * 100).toFixed(0)}%
         </Text>
         <ProgressBar
           progress={budgetUtilization}
@@ -72,24 +77,41 @@ const BudgetAnalysisCard = ({ budgetData }: { budgetData: any }) => {
         borderBottomColor: themeColors.border 
       }]}>
         <View style={styles.budgetSummaryItem}>
-          <Text style={[styles.budgetSummaryValue, { color: themeColors.primaryText }]}>${balance.toFixed(2)}</Text>
-          <Text style={[styles.budgetSummaryLabel, { color: themeColors.secondaryText }]}>Remaining</Text>
+          <Text style={[styles.budgetSummaryValue, { color: themeColors.primaryText }]}>{formatAmount(balance)}</Text>
+          <Text style={[styles.budgetSummaryLabel, { color: themeColors.secondaryText }]}>{t('remaining')}</Text>
         </View>
         <View style={styles.budgetSummaryItem}>
           <Text style={[styles.budgetSummaryValue, { color: themeColors.primaryText }]}>{savingRate.toFixed(1)}%</Text>
-          <Text style={[styles.budgetSummaryLabel, { color: themeColors.secondaryText }]}>Saving Rate</Text>
+          <Text style={[styles.budgetSummaryLabel, { color: themeColors.secondaryText }]}>{t('savingRate')}</Text>
         </View>
       </View>
 
       {categories && categories.length > 0 && (
         <View style={styles.topExpenseContainer}>
-          <Text style={[styles.topExpenseTitle, { color: themeColors.primaryText }]}>Top Expenses</Text>
-          {categories.slice(0, 3).map((category: any, index: number) => (
-            <View key={index} style={styles.topExpenseItem}>
-              <Text style={[styles.topExpenseCategory, { color: themeColors.primaryText }]}>{category.category}</Text>
-              <Text style={styles.topExpenseAmount}>${category.amount.toFixed(2)}</Text>
-            </View>
-          ))}
+          <Text style={[styles.topExpenseTitle, { color: themeColors.primaryText }]}>{t('topExpenses')}</Text>
+          {categories.slice(0, 3).map((category: any, index: number) => {
+            // 安全处理金额，确保它是一个有效的数字
+            let amountValue = 0;
+            if (category && category.amount !== undefined && category.amount !== null) {
+              // 如果是字符串，尝试转换为数字
+              if (typeof category.amount === 'string') {
+                amountValue = parseFloat(category.amount) || 0;
+              } else if (typeof category.amount === 'number') {
+                amountValue = category.amount;
+              }
+            }
+            
+            return (
+              <View key={index} style={styles.topExpenseItem}>
+                <Text style={[styles.topExpenseCategory, { color: themeColors.primaryText }]}>
+                  {t(category?.category.toLowerCase()) || category?.category || t('unknown')}
+                </Text>
+                <Text style={styles.topExpenseAmount}>
+                  {formatAmount(amountValue)}
+                </Text>
+              </View>
+            );
+          })}
         </View>
       )}
     </View>
@@ -99,6 +121,8 @@ const BudgetAnalysisCard = ({ budgetData }: { budgetData: any }) => {
 const HomeScreen = () => {
   const { user, logout } = useAuth();
   const { isDarkMode } = useTheme();
+  const { t } = useLocalization();
+  const { formatAmount } = useCurrency();
   const themeColors = isDarkMode ? darkTheme : lightTheme;
   const [isLoading, setIsLoading] = useState(true);
   const [isRefreshing, setIsRefreshing] = useState(false);
@@ -268,18 +292,18 @@ const HomeScreen = () => {
       console.log('All data fetched');
     } catch (error: any) {
       console.error('Fetch data failed:', error);
-      let errorMessage = 'Failed to fetch data. Please try again later.';
+      let errorMessage = t('fetchDataFailed');
       if (error.response) {
         // 服务器响应了，但状态码不在2xx范围内
-        errorMessage = `Server error: ${error.response.status} - ${error.response.data.error || error.response.statusText}`;
+        errorMessage = `${t('serverError')}: ${error.response.status} - ${error.response.data.error || error.response.statusText}`;
         console.error('Error response:', error.response.data);
       } else if (error.request) {
         // 请求已发送，但没有收到响应
-        errorMessage = 'No response from server. Please check your connection.';
+        errorMessage = t('noServerResponse');
         console.error('No response:', error.request);
       } else {
         // 设置请求时发生了错误
-        errorMessage = `Error: ${error.message}`;
+        errorMessage = `${t('error')}: ${error.message}`;
       }
       setError(errorMessage);
     }
@@ -316,23 +340,6 @@ const HomeScreen = () => {
   // Handle logout
   const handleLogout = () => {
     logout();
-  };
-
-  // Format amount
-  const formatAmount = (amount: number | undefined | null) => {
-    // Check for undefined, null, or NaN
-    if (amount === undefined || amount === null || isNaN(amount)) {
-      console.log('Invalid amount detected:', amount);
-      return '$0.00';
-    }
-    try {
-      // Ensure amount is a number
-      const numAmount = Number(amount);
-      return `$${numAmount.toFixed(2)}`;
-    } catch (error) {
-      console.error('Format amount error:', error, 'Amount value:', amount);
-      return '$0.00';
-    }
   };
 
   // Get recent transactions
@@ -392,17 +399,24 @@ const HomeScreen = () => {
       }
     >
       <View style={[styles.header, { backgroundColor: themeColors.header }]}>
-        <View>
-          <Text style={styles.headerTitle}>JCEco Finance</Text>
-          <Text style={styles.headerSubtitle}>
-            {user ? `Welcome back, ${user.username}` : 'Your Personal Finance Assistant'}
-          </Text>
+        <View style={styles.headerContent}>
+          <Image 
+            source={APP_ICON} 
+            style={styles.appIcon} 
+            resizeMode="contain"
+          />
+          <View style={styles.headerTextContainer}>
+            <Text style={styles.headerTitle}>JCEco Finance</Text>
+            <Text style={styles.headerSubtitle}>
+              {user ? `${t('welcome')}, ${user.username}` : t('personalFinanceAssistant')}
+            </Text>
+          </View>
         </View>
         <TouchableOpacity 
           onPress={handleLogout} 
           style={[styles.logoutButton, { backgroundColor: 'rgba(255, 255, 255, 0.2)' }]}
         >
-          <Text style={styles.logoutText}>Logout</Text>
+          <Text style={styles.logoutText}>{t('logout')}</Text>
         </TouchableOpacity>
       </View>
       
@@ -416,22 +430,22 @@ const HomeScreen = () => {
               fetchData().finally(() => setIsLoading(false));
             }}
           >
-            <Text style={styles.retryText}>Retry</Text>
+            <Text style={styles.retryText}>{t('retry')}</Text>
           </TouchableOpacity>
         </View>
       )}
 
       <View style={styles.summaryContainer}>
         <View style={[styles.summaryCard, { backgroundColor: themeColors.card }]}>
-          <Text style={[styles.summaryLabel, { color: themeColors.secondaryText }]}>Income</Text>
+          <Text style={[styles.summaryLabel, { color: themeColors.secondaryText }]}>{t('income')}</Text>
           <Text style={styles.incomeValue}>{formatAmount(totalIncome)}</Text>
         </View>
         <View style={[styles.summaryCard, { backgroundColor: themeColors.card }]}>
-          <Text style={[styles.summaryLabel, { color: themeColors.secondaryText }]}>Expenses</Text>
+          <Text style={[styles.summaryLabel, { color: themeColors.secondaryText }]}>{t('expenses')}</Text>
           <Text style={styles.expenseValue}>{formatAmount(totalExpense)}</Text>
         </View>
         <View style={[styles.summaryCard, { backgroundColor: themeColors.card }]}>
-          <Text style={[styles.summaryLabel, { color: themeColors.secondaryText }]}>Balance</Text>
+          <Text style={[styles.summaryLabel, { color: themeColors.secondaryText }]}>{t('balance')}</Text>
           <Text style={[
             styles.balanceValue, 
             balance >= 0 ? styles.positiveBalance : styles.negativeBalance
@@ -442,12 +456,12 @@ const HomeScreen = () => {
       </View>
       
       <View style={[styles.section, { backgroundColor: themeColors.card }]}>
-        <Text style={[styles.sectionTitle, { color: themeColors.primaryText }]}>Budget Analysis</Text>
+        <Text style={[styles.sectionTitle, { color: themeColors.primaryText }]}>{t('budgetAnalysis')}</Text>
         <BudgetAnalysisCard budgetData={budgetAnalysis} />
       </View>
 
       <View style={[styles.section, { backgroundColor: themeColors.card }]}>
-        <Text style={[styles.sectionTitle, { color: themeColors.primaryText }]}>Recent Transactions</Text>
+        <Text style={[styles.sectionTitle, { color: themeColors.primaryText }]}>{t('recentTransactions')}</Text>
         {getRecentTransactions().length > 0 ? (
           getRecentTransactions().map((transaction: any) => (
             <View 
@@ -459,7 +473,7 @@ const HomeScreen = () => {
             >
               <View>
                 <Text style={[styles.transactionCategory, { color: themeColors.primaryText }]}>
-                  {transaction.category}
+                  {t(transaction.category.toLowerCase()) || transaction.category}
                 </Text>
                 <Text style={[styles.transactionDate, { color: themeColors.secondaryText }]}>
                   {new Date(transaction.date).toLocaleDateString()}
@@ -476,7 +490,7 @@ const HomeScreen = () => {
         ) : (
           <View style={styles.emptyState}>
             <Text style={[styles.emptyStateText, { color: themeColors.secondaryText }]}>
-              No transactions yet
+              {t('noTransactions')}
             </Text>
           </View>
         )}
@@ -502,6 +516,19 @@ const styles = StyleSheet.create({
     flexDirection: 'row',
     justifyContent: 'space-between',
     alignItems: 'center',
+  },
+  headerContent: {
+    flexDirection: 'row',
+    alignItems: 'center',
+  },
+  appIcon: {
+    width: 40,
+    height: 40,
+    borderRadius: 20,
+    marginRight: 10,
+  },
+  headerTextContainer: {
+    flexDirection: 'column',
   },
   headerTitle: {
     fontSize: 24,

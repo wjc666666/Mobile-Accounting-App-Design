@@ -5,19 +5,22 @@
   </component>
   <component name="ChangeListManager">
     <list default="true" id="1ce5e6ef-4d0e-485e-922c-9353ad075b9a" name="Changes" comment="">
+      <change afterPath="$PROJECT_DIR$/android/app/src/main/res/drawable/splash_background.xml" afterDir="false" />
+      <change afterPath="$PROJECT_DIR$/android/app/src/main/res/drawable/splash_logo.png" afterDir="false" />
+      <change afterPath="$PROJECT_DIR$/android/app/src/main/res/values/colors.xml" afterDir="false" />
+      <change afterPath="$PROJECT_DIR$/image/girl.png" afterDir="false" />
+      <change afterPath="$PROJECT_DIR$/scripts/copy_icons.bat" afterDir="false" />
+      <change afterPath="$PROJECT_DIR$/scripts/generate_icons.bat" afterDir="false" />
+      <change afterPath="$PROJECT_DIR$/src/assets/girl.js" afterDir="false" />
+      <change afterPath="$PROJECT_DIR$/src/utils/CurrencyContext.tsx" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/.gitignore" beforeDir="false" afterPath="$PROJECT_DIR$/.gitignore" afterDir="false" />
       <change beforePath="$PROJECT_DIR$/.idea/workspace.xml" beforeDir="false" afterPath="$PROJECT_DIR$/.idea/workspace.xml" afterDir="false" />
       <change beforePath="$PROJECT_DIR$/App.tsx" beforeDir="false" afterPath="$PROJECT_DIR$/App.tsx" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/android/app/src/main/java/com/jceco/MainApplication.java" beforeDir="false" />
+      <change beforePath="$PROJECT_DIR$/android/app/src/main/res/values/styles.xml" beforeDir="false" afterPath="$PROJECT_DIR$/android/app/src/main/res/values/styles.xml" afterDir="false" />
       <change beforePath="$PROJECT_DIR$/package-lock.json" beforeDir="false" afterPath="$PROJECT_DIR$/package-lock.json" afterDir="false" />
       <change beforePath="$PROJECT_DIR$/package.json" beforeDir="false" afterPath="$PROJECT_DIR$/package.json" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/src/navigation/AppNavigator.tsx" beforeDir="false" afterPath="$PROJECT_DIR$/src/navigation/AppNavigator.tsx" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/src/screens/ExpenseScreen.tsx" beforeDir="false" afterPath="$PROJECT_DIR$/src/screens/ExpenseScreen.tsx" afterDir="false" />
       <change beforePath="$PROJECT_DIR$/src/screens/HomeScreen.tsx" beforeDir="false" afterPath="$PROJECT_DIR$/src/screens/HomeScreen.tsx" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/src/screens/IncomeScreen.tsx" beforeDir="false" afterPath="$PROJECT_DIR$/src/screens/IncomeScreen.tsx" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/src/screens/LoginScreen.tsx" beforeDir="false" afterPath="$PROJECT_DIR$/src/screens/LoginScreen.tsx" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/src/screens/RegisterScreen.tsx" beforeDir="false" afterPath="$PROJECT_DIR$/src/screens/RegisterScreen.tsx" afterDir="false" />
       <change beforePath="$PROJECT_DIR$/src/screens/SettingsScreen.tsx" beforeDir="false" afterPath="$PROJECT_DIR$/src/screens/SettingsScreen.tsx" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/src/screens/StatisticsScreen.tsx" beforeDir="false" afterPath="$PROJECT_DIR$/src/screens/StatisticsScreen.tsx" afterDir="false" />
     </list>
     <option name="SHOW_DIALOG" value="false" />
     <option name="HIGHLIGHT_CONFLICTS" value="true" />

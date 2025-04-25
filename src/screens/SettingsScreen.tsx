@@ -1,36 +1,44 @@
 import React, { useState } from 'react';
-import { View, Text, StyleSheet, Switch, TouchableOpacity, ScrollView, Alert, ActivityIndicator } from 'react-native';
+import { View, Text, StyleSheet, Switch, TouchableOpacity, ScrollView, Alert, ActivityIndicator, Image } from 'react-native';
 import { useAuth } from '../utils/AuthContext';
 import { useTheme, lightTheme, darkTheme } from '../utils/ThemeContext';
+import { useLocalization, Language } from '../utils/LocalizationContext';
+import { useCurrency, CurrencyCode } from '../utils/CurrencyContext';
+import { APP_ICON } from '../assets/girl';
 
 const SettingsScreen = () => {
   const { user, logout } = useAuth();
   const { isDarkMode, toggleTheme } = useTheme();
+  const { language, setLanguage, t } = useLocalization();
+  const { currency, setCurrency } = useCurrency();
   const [notifications, setNotifications] = useState(true);
-  const [currency, setCurrency] = useState('USD');
   const [isLoading, setIsLoading] = useState(false);
   
   // 获取当前主题颜色
   const themeColors = isDarkMode ? darkTheme : lightTheme;
 
-  const handleCurrencyChange = (newCurrency: string) => {
-    setCurrency(newCurrency);
-    Alert.alert('Currency Changed', `Currency set to ${newCurrency}`);
+  const handleCurrencyChange = async (newCurrency: CurrencyCode) => {
+    await setCurrency(newCurrency);
+    Alert.alert(t('success'), `${t('currency')} ${t('change')} ${newCurrency}`);
+  };
+
+  const handleLanguageChange = async (newLanguage: Language) => {
+    await setLanguage(newLanguage);
   };
 
   const handleClearData = () => {
     Alert.alert(
-      'Clear All Data',
-      'Are you sure you want to clear all your financial data? This action cannot be undone.',
+      t('clearAllData'),
+      t('clearDataConfirm'),
       [
         {
-          text: 'Cancel',
+          text: t('cancel'),
           style: 'cancel',
         },
         {
-          text: 'Clear',
+          text: t('delete'),
           style: 'destructive',
-          onPress: () => Alert.alert('Data Cleared', 'All financial data has been cleared'),
+          onPress: () => Alert.alert(t('success'), t('clearDataDone')),
         },
       ]
     );
@@ -43,7 +51,7 @@ const SettingsScreen = () => {
       // Logout successful, AuthContext will automatically update state and navigate to login screen
     } catch (error) {
       console.error('Logout failed:', error);
-      Alert.alert('Error', 'Logout failed. Please try again');
+      Alert.alert(t('error'), 'Logout failed. Please try again');
     } finally {
       setIsLoading(false);
     }
@@ -55,6 +63,16 @@ const SettingsScreen = () => {
     toggleTheme();
   };
 
+  // 获取语言名称
+  const getLanguageName = (code: Language): string => {
+    switch (code) {
+      case 'en': return 'English';
+      case 'zh': return '中文';
+      case 'es': return 'Español';
+      default: return code;
+    }
+  };
+
   return (
     <ScrollView 
       style={[
@@ -63,12 +81,19 @@ const SettingsScreen = () => {
       ]}
     >
       <View style={[styles.header, { backgroundColor: themeColors.header }]}>
-        <Text style={styles.headerTitle}>Settings</Text>
+        <View style={styles.headerContent}>
+          <Image 
+            source={APP_ICON} 
+            style={styles.appIcon} 
+            resizeMode="contain"
+          />
+          <Text style={styles.headerTitle}>{t('settings')}</Text>
+        </View>
       </View>
 
       {user && (
         <View style={[styles.section, { backgroundColor: themeColors.card }]}>
-          <Text style={[styles.sectionTitle, { color: themeColors.primaryText }]}>User Information</Text>
+          <Text style={[styles.sectionTitle, { color: themeColors.primaryText }]}>{t('userInformation')}</Text>
           <View style={styles.userInfo}>
             <Text style={[styles.userName, { color: themeColors.primaryText }]}>{user.username}</Text>
             <Text style={[styles.userEmail, { color: themeColors.secondaryText }]}>{user.email}</Text>
@@ -81,17 +106,17 @@ const SettingsScreen = () => {
             {isLoading ? (
               <ActivityIndicator color="white" size="small" />
             ) : (
-              <Text style={styles.logoutButtonText}>Logout</Text>
+              <Text style={styles.logoutButtonText}>{t('logout')}</Text>
             )}
           </TouchableOpacity>
         </View>
       )}
 
       <View style={[styles.section, { backgroundColor: themeColors.card }]}>
-        <Text style={[styles.sectionTitle, { color: themeColors.primaryText }]}>Appearance</Text>
+        <Text style={[styles.sectionTitle, { color: themeColors.primaryText }]}>{t('appearance')}</Text>
         
         <View style={styles.settingItem}>
-          <Text style={[styles.settingLabel, { color: themeColors.primaryText }]}>Dark Mode</Text>
+          <Text style={[styles.settingLabel, { color: themeColors.primaryText }]}>{t('darkMode')}</Text>
           <Switch
             value={isDarkMode}
             onValueChange={handleThemeToggle}
@@ -102,10 +127,10 @@ const SettingsScreen = () => {
       </View>
 
       <View style={[styles.section, { backgroundColor: themeColors.card }]}>
-        <Text style={[styles.sectionTitle, { color: themeColors.primaryText }]}>Preferences</Text>
+        <Text style={[styles.sectionTitle, { color: themeColors.primaryText }]}>{t('preferences')}</Text>
         
         <View style={styles.settingItem}>
-          <Text style={[styles.settingLabel, { color: themeColors.primaryText }]}>Notifications</Text>
+          <Text style={[styles.settingLabel, { color: themeColors.primaryText }]}>{t('notifications')}</Text>
           <Switch
             value={notifications}
             onValueChange={setNotifications}
@@ -114,7 +139,7 @@ const SettingsScreen = () => {
           />
         </View>
 
-        <Text style={[styles.settingLabel, { color: themeColors.primaryText }]}>Currency</Text>
+        <Text style={[styles.settingLabel, { color: themeColors.primaryText }]}>{t('currency')}</Text>
         <View style={styles.currencyContainer}>
           {['USD', 'EUR', 'GBP', 'JPY', 'CNY'].map((curr) => (
             <TouchableOpacity
@@ -124,7 +149,7 @@ const SettingsScreen = () => {
                 { backgroundColor: themeColors.border },
                 currency === curr && { backgroundColor: themeColors.primary },
               ]}
-              onPress={() => handleCurrencyChange(curr)}
+              onPress={() => handleCurrencyChange(curr as CurrencyCode)}
             >
               <Text
                 style={[
@@ -138,23 +163,74 @@ const SettingsScreen = () => {
             </TouchableOpacity>
           ))}
         </View>
+        
+        <Text style={[styles.settingLabel, { color: themeColors.primaryText }]}>{t('language')}</Text>
+        <View style={styles.currencyContainer}>
+          {['en', 'zh', 'es'].map((lang) => (
+            <TouchableOpacity
+              key={lang}
+              style={[
+                styles.currencyButton,
+                { backgroundColor: themeColors.border },
+                language === lang && { backgroundColor: themeColors.primary },
+              ]}
+              onPress={() => handleLanguageChange(lang as Language)}
+            >
+              <Text
+                style={[
+                  styles.currencyButtonText,
+                  { color: themeColors.secondaryText },
+                  language === lang && { color: 'white' },
+                ]}
+              >
+                {getLanguageName(lang as Language)}
+              </Text>
+            </TouchableOpacity>
+          ))}
+        </View>
       </View>
 
       <View style={[styles.section, { backgroundColor: themeColors.card }]}>
-        <Text style={[styles.sectionTitle, { color: themeColors.primaryText }]}>Data Management</Text>
+        <Text style={[styles.sectionTitle, { color: themeColors.primaryText }]}>{t('dataManagement')}</Text>
         
         <TouchableOpacity 
           style={[styles.dangerButton, { backgroundColor: themeColors.danger }]} 
           onPress={handleClearData}
         >
-          <Text style={styles.dangerButtonText}>Clear All Data</Text>
+          <Text style={styles.dangerButtonText}>{t('clearAllData')}</Text>
+        </TouchableOpacity>
+        
+        <TouchableOpacity 
+          style={[styles.resetButton, { backgroundColor: themeColors.warning, marginTop: 10 }]} 
+          onPress={() => {
+            Alert.alert(
+              t('resetSettings'),
+              t('resetSettingsConfirm'),
+              [
+                {
+                  text: t('cancel'),
+                  style: 'cancel',
+                },
+                {
+                  text: t('resetSettings'),
+                  onPress: async () => {
+                    await setLanguage('en');
+                    await setCurrency('USD');
+                    Alert.alert(t('success'), t('resetSettingsDone'));
+                  },
+                },
+              ]
+            );
+          }}
+        >
+          <Text style={styles.dangerButtonText}>{t('resetSettings')}</Text>
         </TouchableOpacity>
       </View>
 
       <View style={[styles.section, { backgroundColor: themeColors.card }]}>
-        <Text style={[styles.sectionTitle, { color: themeColors.primaryText }]}>About</Text>
+        <Text style={[styles.sectionTitle, { color: themeColors.primaryText }]}>{t('about')}</Text>
         <Text style={[styles.aboutText, { color: themeColors.primaryText }]}>JCEco Finance App</Text>
-        <Text style={[styles.versionText, { color: themeColors.secondaryText }]}>Version 1.0.0</Text>
+        <Text style={[styles.versionText, { color: themeColors.secondaryText }]}>{t('version')} 1.0.0</Text>
       </View>
     </ScrollView>
   );
@@ -163,9 +239,21 @@ const SettingsScreen = () => {
 const styles = StyleSheet.create({
   container: {
     flex: 1,
+    backgroundColor: '#f5f5f5',
   },
   header: {
     padding: 20,
+    backgroundColor: '#3498db',
+  },
+  headerContent: {
+    flexDirection: 'row',
+    alignItems: 'center',
+  },
+  appIcon: {
+    width: 40,
+    height: 40,
+    borderRadius: 20,
+    marginRight: 10,
   },
   headerTitle: {
     fontSize: 24,
@@ -250,12 +338,16 @@ const styles = StyleSheet.create({
   },
   aboutText: {
     fontSize: 16,
-    textAlign: 'center',
     marginBottom: 5,
   },
   versionText: {
     fontSize: 14,
-    textAlign: 'center',
+  },
+  resetButton: {
+    backgroundColor: '#f39c12',
+    padding: 15,
+    borderRadius: 5,
+    alignItems: 'center',
   },
 });
 

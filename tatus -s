@@ -1,0 +1,11 @@
+warning: in the working copy of '.idea/workspace.xml', LF will be replaced by CRLF the next time Git touches it
+warning: in the working copy of 'src/screens/StatisticsScreen.tsx', LF will be replaced by CRLF the next time Git touches it
+.idea/workspace.xml
+App.tsx
+README.md
+src/screens/ExpenseScreen.tsx
+src/screens/FinanceAIScreen.tsx
+src/screens/HomeScreen.tsx
+src/screens/IncomeScreen.tsx
+src/screens/SettingsScreen.tsx
+src/screens/StatisticsScreen.tsx

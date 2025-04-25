@@ -1,4 +1,5 @@
-# OS specific files
+# OSX
+#
 .DS_Store
 .DS_Store?
 ._*
@@ -26,7 +27,6 @@ DerivedData
 *.hmap
 *.ipa
 *.xcuserstate
-**/.xcode.env.local
 ios/.xcode.env.local
 
 # Android/IntelliJ
@@ -45,7 +45,7 @@ local.properties
 !debug.keystore
 .kotlin/
 
-# node.js
+# Node.js
 #
 node_modules/
 npm-debug.log
@@ -82,10 +82,10 @@ lerna-debug.log*
 *.bundle.map
 
 # Ruby / CocoaPods
-**/ios/Pods/
-**/vendor/bundle/
+/ios/Pods/
+/vendor/bundle/
 
-# Temporary files created by Metro to check the health of the file watcher
+# Temporary files created by Metro
 .metro-health-check*
 
 # testing
@@ -105,7 +105,7 @@ __snapshots__
 # Expo
 .expo/
 web-build/
-dist/
+/dist
 
 # Visual Studio Code
 .vscode/*
@@ -114,6 +114,7 @@ dist/
 !.vscode/launch.json
 !.vscode/extensions.json
 *.code-workspace
+.history/*
 
 # Windows specific files
 Thumbs.db
@@ -147,3 +148,14 @@ backend/database/data/*
 # Environment variables
 .env
 .env.*
+.env.local
+.env.development.local
+.env.test.local
+.env.production.local
+
+# Compiled output
+/tmp
+/out-tsc
+
+# Database
+database.sqlite
