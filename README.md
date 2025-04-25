@@ -20,12 +20,25 @@ JCEco/
 │   │   │       │           ├── MainApplication.kt
 │   │   │       │           └── MainActivity.kt
 │   │   │       └── res/    # Android resources
+│   │   │           ├── drawable/
+│   │   │           │   ├── splash_background.xml   # Splash screen background
+│   │   │           │   └── splash_logo.png         # App logo for splash screen
+│   │   │           └── values/
+│   │   │               ├── colors.xml            # Color definitions
+│   │   │               └── styles.xml            # Style definitions
 │   │   └── build.gradle    # App-level build configuration
 │   └── build.gradle        # Project-level build configuration
 ├── ios/                    # iOS native code
 │   ├── JCEco/              # iOS app files
 │   └── Podfile             # iOS dependencies
+├── image/                  # Image assets for the application
+│   └── girl.png            # User avatar image
+├── scripts/                # Utility scripts
+│   ├── copy_icons.bat      # Script to copy icon assets
+│   └── generate_icons.bat  # Script to generate app icons
 ├── src/                    # React Native frontend source code
+│   ├── assets/             # Static assets
+│   │   └── girl.js         # Exported image assets
 │   ├── components/         # Reusable UI components
 │   │   ├── BudgetCard.tsx
 │   │   ├── CategorySelector.tsx
@@ -41,6 +54,7 @@ JCEco/
 │   │   ├── ExpenseScreen.tsx # Expense tracking
 │   │   ├── StatisticsScreen.tsx # Financial statistics
 │   │   ├── SettingsScreen.tsx # App settings
+│   │   ├── TestScreen.tsx  # Testing features
 │   │   └── FinanceAIScreen.tsx # AI Financial Advisor
 │   └── utils/              # Utility functions and contexts
 │       ├── api.ts          # API client and endpoints
@@ -55,6 +69,7 @@ JCEco/
 │   │   ├── authController.js
 │   │   ├── incomeController.js
 │   │   ├── expenseController.js
+│   │   ├── financialAIController.js # AI financial advisor controller
 │   │   └── budgetController.js
 │   ├── middleware/         # Express middleware
 │   │   ├── auth.js         # Authentication middleware
@@ -63,6 +78,7 @@ JCEco/
 │   │   ├── auth.js
 │   │   ├── income.js
 │   │   ├── expense.js
+│   │   ├── financialAI.js  # AI advisor routes
 │   │   └── budget.js
 │   ├── database/           # Database related files
 │   │   ├── alter_tables.sql # SQL for altering tables
@@ -76,7 +92,9 @@ JCEco/
 │   ├── .env                # Environment variables (not in Git)
 │   ├── package.json        # Backend dependencies
 │   └── server.js           # Express server
-├── .env                    # Frontend environment variables (not in Git)
+├── .bundle/                # Ruby bundle configuration
+├── .env                    # Frontend environment variables
+├── .idea/                  # IDE configuration
 ├── App.tsx                 # Application entry point
 ├── babel.config.js         # Babel configuration with env support
 ├── index.js                # React Native entry point
