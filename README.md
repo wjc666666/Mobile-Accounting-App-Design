@@ -265,13 +265,24 @@ The app includes an AI-powered financial analysis feature that provides personal
 - **Interactive Q&A**: Ask specific questions about your finances
 - **Suggested Questions**: Pre-defined questions to help you get started
 - **Intelligent Insights**: Identify spending patterns and potential savings opportunities
+- **Real-time Summaries**: Automatically generates a financial summary with key metrics
+- **Multi-language Support**: Financial advice available in English, Chinese, and Spanish
+- **Dark Mode Compatibility**: Optimized UI for both light and dark themes
+- **Budget Optimization Tips**: Recommendations for improving budget allocation
+- **Context-Aware Advice**: AI considers your spending categories and habits
+- **Investment Guidance**: Basic suggestions about investment opportunities
 
 ### Implementation
 
 - Secure API integration with OpenAI for financial analysis
 - Environment variables used for API key management (.env)
 - Fallback to mock responses when API is unavailable
-- Dark mode compatibility for comfortable viewing in any lighting
+- Optimized prompts to generate relevant financial insights
+- Efficient data processing for quick response times
+- Comprehensive financial data aggregation
+- User-friendly interface with suggested questions
+- Adaptive themes for comfortable viewing in any lighting condition
+- Privacy-focused approach: financial data stays on your device
 
 ## Dark Mode
 
@@ -327,6 +338,7 @@ The app supports multiple languages to cater to a global user base:
     "password": "string"
   }
   ```
+- **Response**: JWT token and user information
 
 #### Login
 - **URL**: `/api/users/login`
@@ -338,6 +350,13 @@ The app supports multiple languages to cater to a global user base:
     "password": "string"
   }
   ```
+- **Response**: JWT token and user information
+
+#### Get User Profile
+- **URL**: `/api/users/profile`
+- **Method**: `GET`
+- **Auth**: JWT Token Required
+- **Response**: User profile information
 
 ### Income Management
 
@@ -354,11 +373,13 @@ The app supports multiple languages to cater to a global user base:
     "description": "string"
   }
   ```
+- **Response**: Created income record
 
 #### Get Income Records
 - **URL**: `/api/income`
 - **Method**: `GET`
 - **Auth**: JWT Token Required
+- **Response**: List of income records
 
 ### Expense Management
 
@@ -375,11 +396,13 @@ The app supports multiple languages to cater to a global user base:
     "description": "string"
   }
   ```
+- **Response**: Created expense record
 
 #### Get Expense Records
 - **URL**: `/api/expenses`
 - **Method**: `GET`
 - **Auth**: JWT Token Required
+- **Response**: List of expense records
 
 ### Budget Analysis
 
@@ -387,12 +410,74 @@ The app supports multiple languages to cater to a global user base:
 - **URL**: `/api/budget/analysis`
 - **Method**: `GET`
 - **Auth**: JWT Token Required
+- **Query Parameters**:
+  - `period`: (optional) time period for analysis (default: current month)
+- **Response**: Budget analysis with income, expenses, and category breakdown
+
+### Finance AI Advisory
+
+#### Analyze Finances
+- **URL**: `/api/ai/analyze`
+- **Method**: `POST`
+- **Auth**: JWT Token Required
+- **Body**:
+  ```json
+  {
+    "financialSummary": "string",
+    "question": "string"
+  }
+  ```
+- **Response**: AI-generated financial advice based on user data and question
+
+#### Get Suggested Questions
+- **URL**: `/api/ai/questions`
+- **Method**: `GET`
+- **Auth**: JWT Token Required
+- **Response**: List of suggested financial questions for AI analysis
+
+### Settings Management
+
+#### Update Language
+- **URL**: `/api/settings/language`
+- **Method**: `PUT`
+- **Auth**: JWT Token Required
+- **Body**:
+  ```json
+  {
+    "language": "string" // 'en', 'zh', or 'es'
+  }
+  ```
+- **Response**: Updated settings
+
+#### Update Currency
+- **URL**: `/api/settings/currency`
+- **Method**: `PUT`
+- **Auth**: JWT Token Required
+- **Body**:
+  ```json
+  {
+    "currency": "string" // 'USD', 'EUR', 'GBP', 'JPY', or 'CNY'
+  }
+  ```
+- **Response**: Updated settings
+
+#### Update Theme
+- **URL**: `/api/settings/theme`
+- **Method**: `PUT`
+- **Auth**: JWT Token Required
+- **Body**:
+  ```json
+  {
+    "darkMode": "boolean"
+  }
+  ```
+- **Response**: Updated settings
 
 ## Development Team
 
-- Frontend Developers: Team JCEco
-- Backend Developers: Team JCEco
-- UI/UX Design: Team JCEco
+- Frontend Developers: Juncheng Wang
+- Backend Developers: Juncheng Wang
+- UI/UX Design: Juncheng Wang
 
 ## License
 

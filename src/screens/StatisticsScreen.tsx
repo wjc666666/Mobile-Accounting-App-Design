@@ -2,6 +2,8 @@ import React, { useState } from 'react';
 import { View, Text, StyleSheet, ScrollView, ActivityIndicator, RefreshControl, TouchableOpacity, Dimensions } from 'react-native';
 import { incomeAPI, expenseAPI } from '../utils/api';
 import { useTheme, lightTheme, darkTheme } from '../utils/ThemeContext';
+import { useLocalization } from '../utils/LocalizationContext';
+import { useCurrency } from '../utils/CurrencyContext';
 import { useFocusEffect } from '@react-navigation/native';
 import ImportTransactions from '../components/ImportTransactions';
 import { BarChart } from 'react-native-chart-kit';
@@ -11,6 +13,8 @@ const screenWidth = Dimensions.get('window').width - 30; // Account for margins
 
 const StatisticsScreen = () => {
   const { isDarkMode } = useTheme();
+  const { t } = useLocalization();
+  const { formatAmount } = useCurrency();
   const themeColors = isDarkMode ? darkTheme : lightTheme;
   const [isLoading, setIsLoading] = useState(true);
   const [isRefreshing, setIsRefreshing] = useState(false);
@@ -340,27 +344,52 @@ const StatisticsScreen = () => {
       .sort((a, b) => b.amount - a.amount)
       .slice(0, 5);
     
-    return {
-      labels: topCategories.map(cat => cat.name.substring(0, 6)), // Truncate long names
+    const chartData = {
+      labels: topCategories.map(cat => t(cat.name.toLowerCase()) || cat.name.substring(0, 6)), // Use translation or truncate long names
       datasets: [
         {
           data: topCategories.map(cat => cat.amount),
         },
       ],
     };
-  };
 
-  // Chart configuration
-  const chartConfig = {
-    backgroundGradientFrom: themeColors.card,
-    backgroundGradientTo: themeColors.card,
-    color: (opacity = 1) => activeTab === 'income' 
-      ? `rgba(46, 204, 113, ${opacity})` // Green for income
-      : `rgba(231, 76, 60, ${opacity})`, // Red for expenses
-    strokeWidth: 2,
-    barPercentage: 0.7,
-    decimalPlaces: 0,
-    labelColor: () => themeColors.primaryText,
+    // Chart configuration
+    const chartConfig = {
+      backgroundGradientFrom: themeColors.card,
+      backgroundGradientTo: themeColors.card,
+      color: (opacity = 1) => activeTab === 'income' 
+        ? `rgba(46, 204, 113, ${opacity})` // Green for income
+        : `rgba(231, 76, 60, ${opacity})`, // Red for expenses
+      strokeWidth: 2,
+      barPercentage: 0.7,
+      decimalPlaces: 0,
+      labelColor: () => themeColors.primaryText,
+    };
+
+    if (topCategories.length === 0) {
+      return (
+        <View style={styles.emptyState}>
+          <Text style={[styles.emptyStateText, { color: themeColors.secondaryText }]}>
+            {t('noDataAvailable')}
+          </Text>
+        </View>
+      );
+    }
+
+    return (
+      <BarChart
+        data={chartData}
+        width={screenWidth}
+        height={220}
+        chartConfig={chartConfig}
+        verticalLabelRotation={30}
+        showValuesOnTopOfBars
+        fromZero
+        yAxisLabel=""
+        yAxisSuffix=""
+        style={{ marginVertical: 8, borderRadius: 8 }}
+      />
+    );
   };
 
   // Render category list with percentage bars
@@ -383,10 +412,10 @@ const StatisticsScreen = () => {
           <View key={index} style={styles.categoryItem}>
             <View style={styles.categoryHeader}>
               <Text style={[styles.categoryName, { color: themeColors.primaryText }]}>
-                {category.name}
+                {t(category.name.toLowerCase()) || category.name}
               </Text>
               <Text style={[styles.categoryAmount, { color: themeColors.primaryText }]}>
-                ${category.amount.toFixed(2)}
+                {formatAmount(category.amount)}
               </Text>
             </View>
             <View style={[styles.percentageBarContainer, { backgroundColor: themeColors.border }]}>
@@ -432,150 +461,104 @@ const StatisticsScreen = () => {
         />
       }
     >
-      <View style={[styles.header, { backgroundColor: themeColors.header }]}>
-        <Text style={styles.headerTitle}>Finance Statistics</Text>
+      <View style={[styles.header, { backgroundColor: themeColors.primary }]}>
+        <Text style={styles.headerTitle}>{t('statistics')}</Text>
+        <View style={styles.tabContainer}>
+          <TouchableOpacity 
+            style={[
+              styles.tab, 
+              activeTab === 'expense' && [styles.activeTab, { backgroundColor: themeColors.danger }]
+            ]}
+            onPress={() => setActiveTab('expense')}
+          >
+            <Text style={[styles.tabText, activeTab === 'expense' && styles.activeTabText]}>
+              {t('expenses')}
+            </Text>
+          </TouchableOpacity>
+          <TouchableOpacity 
+            style={[
+              styles.tab, 
+              activeTab === 'income' && [styles.activeTab, { backgroundColor: themeColors.success }]
+            ]}
+            onPress={() => setActiveTab('income')}
+          >
+            <Text style={[styles.tabText, activeTab === 'income' && styles.activeTabText]}>
+              {t('income')}
+            </Text>
+          </TouchableOpacity>
+        </View>
       </View>
       
       {error && (
-        <View style={[styles.errorContainer, { 
-          backgroundColor: isDarkMode ? 'rgba(231, 76, 60, 0.2)' : '#ffecec',
-          borderLeftColor: themeColors.danger
-        }]}>
+        <View style={[styles.errorCard, { backgroundColor: themeColors.card }]}>
           <Text style={[styles.errorText, { color: themeColors.danger }]}>{error}</Text>
           <TouchableOpacity 
-            style={[styles.retryButton, { backgroundColor: themeColors.danger }]} 
+            style={[styles.retryButton, { backgroundColor: themeColors.primary }]} 
             onPress={() => {
               setIsLoading(true);
               fetchData().finally(() => setIsLoading(false));
             }}
           >
-            <Text style={styles.retryText}>Retry</Text>
+            <Text style={styles.retryButtonText}>{t('retry')}</Text>
           </TouchableOpacity>
         </View>
       )}
 
-      <View style={styles.summaryContainer}>
-        <View style={[styles.summaryCard, { 
-          backgroundColor: themeColors.card,
-          shadowColor: isDarkMode ? 'rgba(0, 0, 0, 0.5)' : '#000',
-        }]}>
-          <Text style={[styles.summaryValue, { color: themeColors.primaryText }]}>
-            ${incomeData.total.toFixed(2)}
-          </Text>
-          <Text style={[styles.summaryLabel, { color: themeColors.secondaryText }]}>
-            Total Income
-          </Text>
-        </View>
-        <View style={[styles.summaryCard, { 
-          backgroundColor: themeColors.card,
-          shadowColor: isDarkMode ? 'rgba(0, 0, 0, 0.5)' : '#000',
-        }]}>
-          <Text style={[styles.summaryValue, { color: themeColors.primaryText }]}>
-            ${expenseData.total.toFixed(2)}
-          </Text>
-          <Text style={[styles.summaryLabel, { color: themeColors.secondaryText }]}>
-            Total Expenses
-          </Text>
-        </View>
-        <View style={[styles.summaryCard, { 
-          backgroundColor: themeColors.card,
-          shadowColor: isDarkMode ? 'rgba(0, 0, 0, 0.5)' : '#000',
-        }]}>
-          <Text style={[
-            styles.summaryValue, 
-            balance >= 0 ? styles.positiveBalance : styles.negativeBalance
-          ]}>
-            ${balance.toFixed(2)}
-          </Text>
-          <Text style={[styles.summaryLabel, { color: themeColors.secondaryText }]}>
-            Balance
-          </Text>
-        </View>
-      </View>
-
-      <View style={[styles.savingContainer, { 
-        backgroundColor: themeColors.card,
-        shadowColor: isDarkMode ? 'rgba(0, 0, 0, 0.5)' : '#000',
-      }]}>
-        <Text style={[styles.savingLabel, { color: themeColors.primaryText }]}>
-          Saving Rate:
-        </Text>
-        <Text style={[styles.savingValue, { color: themeColors.primary }]}>
-          {savingsRate}%
-        </Text>
-      </View>
-
-      <View style={[styles.tabContainer, { 
-        backgroundColor: themeColors.card,
-        shadowColor: isDarkMode ? 'rgba(0, 0, 0, 0.5)' : '#000',
-      }]}>
-        <TouchableOpacity 
-          style={[
-            styles.tab, 
-            activeTab === 'income' && [styles.activeTab, { backgroundColor: themeColors.primary }]
-          ]} 
-          onPress={() => setActiveTab('income')}
-        >
-          <Text style={[
-            styles.tabText, 
-            { color: themeColors.primaryText },
-            activeTab === 'income' && styles.activeTabText
-          ]}>
-            Income
-          </Text>
-        </TouchableOpacity>
-        <TouchableOpacity 
-          style={[
-            styles.tab, 
-            activeTab === 'expense' && [styles.activeTab, { backgroundColor: themeColors.primary }]
-          ]} 
-          onPress={() => setActiveTab('expense')}
-        >
-          <Text style={[
-            styles.tabText, 
-            { color: themeColors.primaryText },
-            activeTab === 'expense' && styles.activeTabText
-          ]}>
-            Expenses
-          </Text>
-        </TouchableOpacity>
-      </View>
-
-      <View style={[styles.chartContainer, { 
-        backgroundColor: themeColors.card,
-        shadowColor: isDarkMode ? 'rgba(0, 0, 0, 0.5)' : '#000',
-      }]}>
-        <Text style={[styles.chartTitle, { color: themeColors.primaryText }]}>
-          {activeTab === 'income' ? 'Income' : 'Expense'} Distribution
-        </Text>
-        {(activeTab === 'income' ? incomeData.categories : expenseData.categories).length > 0 ? (
-          <BarChart
-            data={getChartData()}
-            width={screenWidth}
-            height={220}
-            chartConfig={chartConfig}
-            verticalLabelRotation={30}
-            showValuesOnTopOfBars
-            fromZero
-            yAxisLabel=""
-            yAxisSuffix=""
-            style={styles.chart}
-          />
-        ) : (
-          <View style={styles.emptyChart}>
-            <Text style={[styles.emptyStateText, { color: themeColors.secondaryText }]}>
-              No {activeTab} data to display
+      <View style={[styles.summaryCard, { backgroundColor: themeColors.card }]}>
+        <View style={styles.summaryRow}>
+          <View style={styles.summaryItem}>
+            <Text style={[styles.summaryLabel, { color: themeColors.secondaryText }]}>
+              {t('income')}
+            </Text>
+            <Text style={[styles.incomeValue, { color: themeColors.success }]}>
+              {formatAmount(incomeData.total)}
             </Text>
           </View>
-        )}
+          <View style={styles.summaryItem}>
+            <Text style={[styles.summaryLabel, { color: themeColors.secondaryText }]}>
+              {t('expenses')}
+            </Text>
+            <Text style={[styles.expenseValue, { color: themeColors.danger }]}>
+              {formatAmount(expenseData.total)}
+            </Text>
+          </View>
+        </View>
+        <View style={styles.summaryRow}>
+          <View style={styles.summaryItem}>
+            <Text style={[styles.summaryLabel, { color: themeColors.secondaryText }]}>
+              {t('balance')}
+            </Text>
+            <Text style={[
+              styles.balanceValue, 
+              { color: balance >= 0 ? themeColors.success : themeColors.danger }
+            ]}>
+              {formatAmount(balance)}
+            </Text>
+          </View>
+          <View style={styles.summaryItem}>
+            <Text style={[styles.summaryLabel, { color: themeColors.secondaryText }]}>
+              {t('savingRate')}
+            </Text>
+            <Text style={[
+              styles.rateValue, 
+              { color: parseFloat(savingsRate) >= 0 ? themeColors.success : themeColors.danger }
+            ]}>
+              {savingsRate}%
+            </Text>
+          </View>
+        </View>
       </View>
 
-      <View style={[styles.categoryContainer, { 
-        backgroundColor: themeColors.card,
-        shadowColor: isDarkMode ? 'rgba(0, 0, 0, 0.5)' : '#000',
-      }]}>
-        <Text style={[styles.categoryTitle, { color: themeColors.primaryText }]}>
-          {activeTab === 'income' ? 'Income' : 'Expense'} Categories
+      <View style={[styles.chartsCard, { backgroundColor: themeColors.card }]}>
+        <Text style={[styles.sectionTitle, { color: themeColors.primaryText }]}>
+          {activeTab === 'expense' ? t('expenseByCategory') : t('incomeByCategory')}
+        </Text>
+        {getChartData()}
+      </View>
+
+      <View style={[styles.categoriesCard, { backgroundColor: themeColors.card }]}>
+        <Text style={[styles.sectionTitle, { color: themeColors.primaryText }]}>
+          {activeTab === 'expense' ? t('expenseDetails') : t('incomeDetails')}
         </Text>
         {renderCategoryList()}
       </View>
@@ -616,11 +599,6 @@ const styles = StyleSheet.create({
     color: 'white',
     textAlign: 'center',
   },
-  summaryContainer: {
-    flexDirection: 'row',
-    justifyContent: 'space-between',
-    padding: 10,
-  },
   summaryCard: {
     flex: 1,
     backgroundColor: 'white',
@@ -634,45 +612,40 @@ const styles = StyleSheet.create({
     shadowRadius: 2,
     elevation: 2,
   },
+  summaryRow: {
+    flexDirection: 'row',
+    justifyContent: 'space-between',
+    alignItems: 'center',
+    width: '100%',
+  },
+  summaryItem: {
+    flex: 1,
+    alignItems: 'center',
+  },
   summaryLabel: {
     fontSize: 12,
     color: '#666',
-    marginTop: 5,
+    marginBottom: 5,
   },
-  summaryValue: {
+  incomeValue: {
+    fontSize: 16,
+    fontWeight: 'bold',
+    color: '#2ecc71',
+  },
+  expenseValue: {
+    fontSize: 16,
+    fontWeight: 'bold',
+    color: '#e74c3c',
+  },
+  balanceValue: {
     fontSize: 16,
     fontWeight: 'bold',
     color: '#333',
   },
-  positiveBalance: {
-    color: '#2ecc71',
-  },
-  negativeBalance: {
-    color: '#e74c3c',
-  },
-  savingContainer: {
-    flexDirection: 'row',
-    justifyContent: 'center',
-    alignItems: 'center',
-    backgroundColor: 'white',
-    padding: 15,
-    margin: 15,
-    borderRadius: 8,
-    shadowColor: '#000',
-    shadowOffset: { width: 0, height: 1 },
-    shadowOpacity: 0.2,
-    shadowRadius: 2,
-    elevation: 2,
-  },
-  savingLabel: {
+  rateValue: {
     fontSize: 16,
-    color: '#666',
-  },
-  savingValue: {
-    fontSize: 18,
     fontWeight: 'bold',
-    color: '#3498db',
-    marginLeft: 10,
+    color: '#333',
   },
   tabContainer: {
     flexDirection: 'row',
@@ -703,7 +676,7 @@ const styles = StyleSheet.create({
     color: 'white',
     fontWeight: 'bold',
   },
-  chartContainer: {
+  chartsCard: {
     backgroundColor: 'white',
     padding: 15,
     margin: 15,
@@ -715,22 +688,13 @@ const styles = StyleSheet.create({
     shadowRadius: 2,
     elevation: 2,
   },
-  chartTitle: {
-    fontSize: 16,
+  sectionTitle: {
+    fontSize: 18,
     fontWeight: 'bold',
     color: '#333',
     marginBottom: 10,
   },
-  chart: {
-    marginVertical: 8,
-    borderRadius: 8,
-  },
-  emptyChart: {
-    height: 200,
-    justifyContent: 'center',
-    alignItems: 'center',
-  },
-  categoryContainer: {
+  categoriesCard: {
     backgroundColor: 'white',
     padding: 15,
     margin: 15,
@@ -741,12 +705,6 @@ const styles = StyleSheet.create({
     shadowOpacity: 0.2,
     shadowRadius: 2,
     elevation: 2,
-  },
-  categoryTitle: {
-    fontSize: 16,
-    fontWeight: 'bold',
-    color: '#333',
-    marginBottom: 15,
   },
   categoryList: {
     marginTop: 5,
@@ -784,7 +742,7 @@ const styles = StyleSheet.create({
     marginTop: 5,
     textAlign: 'right',
   },
-  errorContainer: {
+  errorCard: {
     margin: 15,
     padding: 15,
     backgroundColor: '#ffecec',
@@ -802,19 +760,13 @@ const styles = StyleSheet.create({
     alignSelf: 'flex-end',
     marginTop: 10,
   },
-  retryText: {
+  retryButtonText: {
     color: 'white',
     fontWeight: 'bold',
   },
   section: {
     margin: 15,
     marginTop: 5,
-  },
-  sectionTitle: {
-    fontSize: 18,
-    fontWeight: 'bold',
-    color: '#333',
-    marginBottom: 10,
   },
   emptyState: {
     padding: 20,

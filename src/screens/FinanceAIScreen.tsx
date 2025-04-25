@@ -3,6 +3,8 @@ import { View, Text, StyleSheet, ScrollView, ActivityIndicator, TextInput, Touch
 import { useFocusEffect } from '@react-navigation/native';
 import { incomeAPI, expenseAPI, financialAIAPI } from '../utils/api';
 import { useTheme, lightTheme, darkTheme } from '../utils/ThemeContext';
+import { useLocalization } from '../utils/LocalizationContext';
+import { useCurrency } from '../utils/CurrencyContext';
 
 interface Transaction {
   amount: number;
@@ -13,6 +15,8 @@ interface Transaction {
 
 const FinanceAIScreen = () => {
   const { isDarkMode } = useTheme();
+  const { t } = useLocalization();
+  const { formatAmount } = useCurrency();
   const themeColors = isDarkMode ? darkTheme : lightTheme;
   
   const [_incomes, setIncomes] = useState<Transaction[]>([]);
@@ -60,12 +64,12 @@ const FinanceAIScreen = () => {
     });
 
     const summary = `
-Financial Summary:
-- Total Income: $${totalIncome.toFixed(2)}
-- Total Expenses: $${totalExpense.toFixed(2)}
-- Balance: $${balance.toFixed(2)}
-- Saving Rate: ${savingRate.toFixed(1)}%
-${maxCategory ? `- Highest expense category: ${maxCategory} ($${maxAmount.toFixed(2)})` : ''}
+${t('financeAI')} ${t('summary')}:
+- ${t('income')}: ${formatAmount(totalIncome)}
+- ${t('expenses')}: ${formatAmount(totalExpense)}
+- ${t('balance')}: ${formatAmount(balance)}
+- ${t('savingRate')}: ${savingRate.toFixed(1)}%
+${maxCategory ? `- ${t('topExpenses')}: ${t(maxCategory.toLowerCase()) || maxCategory} (${formatAmount(maxAmount)})` : ''}
     `;
 
     setFinancialSummary(summary);
@@ -119,15 +123,16 @@ ${maxCategory ? `- Highest expense category: ${maxCategory} ($${maxAmount.toFixe
       return () => {
         // Cleanup function
       };
+    // eslint-disable-next-line react-hooks/exhaustive-deps
     }, [])
   );
 
   // Default questions list
   const defaultQuestions = [
-    "Analyze my income and expenses and provide improvement suggestions",
-    "How is my current saving rate? How can I improve it?",
-    "Analyze my spending patterns. Where can I cut expenses?",
-    "Are my income sources diversified? How can I increase my income?"
+    t('howToSave'),
+    t('spendingTrends'),
+    t('budgetRecommendations'),
+    t('investmentAdvice')
   ];
 
   // Ask the AI for financial advice
@@ -153,27 +158,27 @@ ${maxCategory ? `- Highest expense category: ${maxCategory} ($${maxAmount.toFixe
   return (
     <ScrollView style={[styles.container, { backgroundColor: themeColors.background }]}>
       <View style={[styles.header, { backgroundColor: themeColors.primary }]}>
-        <Text style={styles.headerTitle}>AI Financial Advisor</Text>
+        <Text style={styles.headerTitle}>{t('financeAI')}</Text>
       </View>
 
       {isDataLoading ? (
         <View style={styles.loadingContainer}>
           <ActivityIndicator size="large" color={themeColors.primary} />
-          <Text style={[styles.loadingText, { color: themeColors.secondaryText }]}>Loading your financial data...</Text>
+          <Text style={[styles.loadingText, { color: themeColors.secondaryText }]}>{t('analyzingData')}</Text>
         </View>
       ) : (
         <>
           <View style={[styles.summaryContainer, { backgroundColor: themeColors.card }]}>
-            <Text style={[styles.summaryTitle, { color: themeColors.primaryText }]}>Financial Summary</Text>
+            <Text style={[styles.summaryTitle, { color: themeColors.primaryText }]}>{t('summary')}</Text>
             <Text style={[styles.summaryText, { color: themeColors.primaryText }]}>
               {financialSummary}
             </Text>
           </View>
 
           <View style={[styles.aiContainer, { backgroundColor: themeColors.card }]}>
-            <Text style={[styles.aiTitle, { color: themeColors.primaryText }]}>Smart Financial Advisor</Text>
+            <Text style={[styles.aiTitle, { color: themeColors.primaryText }]}>{t('financeAI')}</Text>
             <Text style={[styles.aiSubtitle, { color: themeColors.secondaryText }]}>
-              Ask the AI about your financial situation for personalized advice
+              {t('askFinanceQuestion')}
             </Text>
 
             <View style={styles.questionContainer}>
@@ -183,7 +188,7 @@ ${maxCategory ? `- Highest expense category: ${maxCategory} ($${maxAmount.toFixe
                   color: themeColors.primaryText,
                   borderColor: themeColors.border
                 }]}
-                placeholder="Enter your financial question..."
+                placeholder={t('askFinanceQuestion')}
                 placeholderTextColor={themeColors.secondaryText}
                 value={question}
                 onChangeText={setQuestion}
@@ -197,42 +202,45 @@ ${maxCategory ? `- Highest expense category: ${maxCategory} ($${maxAmount.toFixe
                 {isLoading ? (
                   <ActivityIndicator color="white" size="small" />
                 ) : (
-                  <Text style={styles.askButtonText}>Ask</Text>
+                  <Text style={styles.askButtonText}>{t('ask')}</Text>
                 )}
               </TouchableOpacity>
             </View>
 
-            <Text style={[styles.suggestionsTitle, { color: themeColors.primaryText }]}>
-              Suggested Questions:
-            </Text>
-            <View style={styles.suggestionsContainer}>
+            {aiResponse ? (
+              <View style={[
+                styles.responseContainer, 
+                { 
+                  borderColor: themeColors.border,
+                  backgroundColor: isDarkMode ? themeColors.card : '#f5f5f5' 
+                }
+              ]}>
+                <Text style={[styles.responseTitle, { color: themeColors.primaryText }]}>{t('advice')}</Text>
+                <Text style={[styles.responseText, { color: themeColors.primaryText }]}>{aiResponse}</Text>
+              </View>
+            ) : null}
+
+            <View style={styles.suggestedContainer}>
+              <Text style={[styles.suggestedTitle, { color: themeColors.primaryText }]}>{t('suggestedQuestions')}</Text>
               {defaultQuestions.map((q, index) => (
-                <TouchableOpacity
+                <TouchableOpacity 
                   key={index}
-                  style={[styles.suggestionButton, { backgroundColor: isDarkMode ? themeColors.border : '#f5f5f5' }]}
+                  style={[
+                    styles.suggestedQuestion, 
+                    { 
+                      borderColor: themeColors.border,
+                      backgroundColor: isDarkMode ? themeColors.card : '#f5f5f5' 
+                    }
+                  ]}
                   onPress={() => {
                     setQuestion(q);
                     askAI(q);
                   }}
                 >
-                  <Text style={[styles.suggestionText, { color: themeColors.primaryText }]}>{q}</Text>
+                  <Text style={[styles.suggestedQuestionText, { color: themeColors.primaryText }]}>{q}</Text>
                 </TouchableOpacity>
               ))}
             </View>
-
-            {aiResponse ? (
-              <View style={[styles.responseContainer, { 
-                backgroundColor: isDarkMode ? themeColors.border : '#f5f5f5',
-                borderColor: themeColors.border 
-              }]}>
-                <Text style={[styles.responseTitle, { color: themeColors.primaryText }]}>
-                  AI Analysis
-                </Text>
-                <Text style={[styles.responseText, { color: themeColors.primaryText }]}>
-                  {aiResponse}
-                </Text>
-              </View>
-            ) : null}
           </View>
         </>
       )}
@@ -310,12 +318,10 @@ const styles = StyleSheet.create({
     marginBottom: 15,
   },
   questionInput: {
-    backgroundColor: '#f5f5f5',
     borderRadius: 8,
     padding: 12,
     marginBottom: 10,
     borderWidth: 1,
-    borderColor: '#ddd',
     minHeight: 80,
     fontSize: 16,
   },
@@ -330,29 +336,11 @@ const styles = StyleSheet.create({
     fontSize: 16,
     fontWeight: 'bold',
   },
-  suggestionsTitle: {
-    fontSize: 16,
-    fontWeight: 'bold',
-    marginBottom: 10,
-  },
-  suggestionsContainer: {
-    marginBottom: 20,
-  },
-  suggestionButton: {
-    backgroundColor: '#f5f5f5',
-    borderRadius: 8,
-    padding: 12,
-    marginBottom: 8,
-  },
-  suggestionText: {
-    fontSize: 14,
-  },
   responseContainer: {
-    backgroundColor: '#f5f5f5',
     borderRadius: 8,
     padding: 15,
     borderWidth: 1,
-    borderColor: '#ddd',
+    marginBottom: 15,
   },
   responseTitle: {
     fontSize: 16,
@@ -362,6 +350,23 @@ const styles = StyleSheet.create({
   responseText: {
     fontSize: 14,
     lineHeight: 22,
+  },
+  suggestedContainer: {
+    marginBottom: 20,
+  },
+  suggestedTitle: {
+    fontSize: 16,
+    fontWeight: 'bold',
+    marginBottom: 10,
+  },
+  suggestedQuestion: {
+    borderRadius: 8,
+    padding: 12,
+    marginBottom: 8,
+    borderWidth: 1,
+  },
+  suggestedQuestionText: {
+    fontSize: 14,
   },
 });
 

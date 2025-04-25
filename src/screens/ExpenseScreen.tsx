@@ -2,6 +2,8 @@ import React, { useState } from 'react';
 import { View, Text, StyleSheet, TextInput, TouchableOpacity, ScrollView, Alert, ActivityIndicator } from 'react-native';
 import { expenseAPI } from '../utils/api';
 import { useTheme, lightTheme, darkTheme } from '../utils/ThemeContext';
+import { useLocalization } from '../utils/LocalizationContext';
+import { useCurrency } from '../utils/CurrencyContext';
 import { useFocusEffect } from '@react-navigation/native';
 
 interface ExpenseRecord {
@@ -14,19 +16,29 @@ interface ExpenseRecord {
 
 const ExpenseScreen = () => {
   const { isDarkMode } = useTheme();
+  const { t } = useLocalization();
+  const { currency, formatAmount, getCurrencySymbol } = useCurrency();
   const themeColors = isDarkMode ? darkTheme : lightTheme;
   const [amount, setAmount] = useState('');
   const [description, setDescription] = useState('');
-  const [category, setCategory] = useState('Food');
+  const [category, setCategory] = useState(t('food'));
   const [date, setDate] = useState(new Date().toISOString().split('T')[0]);
   const [isLoading, setIsLoading] = useState(false);
   const [expenseHistory, setExpenseHistory] = useState<ExpenseRecord[]>([]);
   const [isLoadingHistory, setIsLoadingHistory] = useState(false);
 
-  const categories = ['Food', 'Transport', 'Housing', 'Entertainment', 'Shopping', 'Utilities', 'Other'];
+  const categories = [
+    { id: 'food', label: t('food') },
+    { id: 'transport', label: t('transport') },
+    { id: 'housing', label: t('housing') },
+    { id: 'entertainment', label: t('entertainment') },
+    { id: 'shopping', label: t('shopping') },
+    { id: 'utilities', label: t('utilities') },
+    { id: 'other', label: t('otherExpense') }
+  ];
 
   // 获取历史记录
-  const fetchExpenseHistory = async () => {
+  const fetchExpenseHistory = React.useCallback(async () => {
     setIsLoadingHistory(true);
     try {
       const data = await expenseAPI.getExpenses();
@@ -44,11 +56,11 @@ const ExpenseScreen = () => {
       }
     } catch (error) {
       console.error('Failed to fetch expense history:', error);
-      Alert.alert('Error', 'Failed to load expense history');
+      Alert.alert(t('error'), t('failedToAddExpense'));
     } finally {
       setIsLoadingHistory(false);
     }
-  };
+  }, [t]);
 
   // 组件挂载和页面聚焦时获取历史记录
   useFocusEffect(
@@ -57,17 +69,17 @@ const ExpenseScreen = () => {
       return () => {
         // 清理函数
       };
-    }, [])
+    }, [fetchExpenseHistory])
   );
 
   const handleAddExpense = async () => {
     if (!amount || isNaN(Number(amount))) {
-      Alert.alert('Error', 'Please enter a valid amount');
+      Alert.alert(t('error'), t('enterValidAmount'));
       return;
     }
 
     if (!description) {
-      Alert.alert('Error', 'Please enter a description');
+      Alert.alert(t('error'), t('enterDescription'));
       return;
     }
 
@@ -81,7 +93,7 @@ const ExpenseScreen = () => {
         description
       });
       
-      Alert.alert('Success', 'Expense record added');
+      Alert.alert(t('success'), t('expenseAdded'));
       
       // 重新获取历史记录以刷新列表
       fetchExpenseHistory();
@@ -89,22 +101,29 @@ const ExpenseScreen = () => {
       // Reset form
       setAmount('');
       setDescription('');
-      setCategory('Food');
+      setCategory(t('food'));
       setDate(new Date().toISOString().split('T')[0]);
     } catch (error) {
       console.error('Failed to add expense record:', error);
-      Alert.alert('Error', 'Failed to add expense record. Please try again');
+      Alert.alert(t('error'), t('failedToAddExpense'));
     } finally {
       setIsLoading(false);
     }
   };
 
   // 渲染历史记录项
-  const renderHistoryItem = ({ item }: { item: ExpenseRecord }) => (
-    <View style={[styles.historyItem, { backgroundColor: themeColors.card, borderBottomColor: themeColors.border }]}>
+  const renderHistoryItem = (item: ExpenseRecord) => (
+    <View 
+      key={item.id}
+      style={[styles.historyItem, { backgroundColor: themeColors.card, borderBottomColor: themeColors.border }]}
+    >
       <View style={styles.historyItemHeader}>
-        <Text style={[styles.historyCategory, { color: themeColors.primaryText }]}>{item.category}</Text>
-        <Text style={[styles.historyAmount, { color: themeColors.danger }]}>-${item.amount.toFixed(2)}</Text>
+        <Text style={[styles.historyCategory, { color: themeColors.primaryText }]}>
+          {t(item.category.toLowerCase()) || item.category}
+        </Text>
+        <Text style={[styles.historyAmount, { color: themeColors.danger }]}>
+          -{formatAmount(item.amount)}
+        </Text>
       </View>
       <Text style={[styles.historyDescription, { color: themeColors.primaryText }]}>{item.description}</Text>
       <Text style={[styles.historyDate, { color: themeColors.secondaryText }]}>{new Date(item.date).toLocaleDateString()}</Text>
@@ -114,7 +133,7 @@ const ExpenseScreen = () => {
   return (
     <ScrollView style={[styles.container, { backgroundColor: themeColors.background }]}>
       <View style={[styles.header, { backgroundColor: themeColors.danger }]}>
-        <Text style={styles.headerTitle}>Add Expense</Text>
+        <Text style={styles.headerTitle}>{t('addExpense')}</Text>
       </View>
 
       <View style={[styles.form, { 
@@ -122,7 +141,9 @@ const ExpenseScreen = () => {
         shadowColor: isDarkMode ? 'rgba(0, 0, 0, 0.5)' : '#000',
       }]}>
         <View style={styles.formGroup}>
-          <Text style={[styles.label, { color: themeColors.primaryText }]}>Amount ($)</Text>
+          <Text style={[styles.label, { color: themeColors.primaryText }]}>
+            {t('amount')} ({getCurrencySymbol(currency)})
+          </Text>
           <TextInput
             style={[styles.input, { 
               borderColor: themeColors.border,
@@ -138,7 +159,7 @@ const ExpenseScreen = () => {
         </View>
 
         <View style={styles.formGroup}>
-          <Text style={[styles.label, { color: themeColors.primaryText }]}>Description</Text>
+          <Text style={[styles.label, { color: themeColors.primaryText }]}>{t('description')}</Text>
           <TextInput
             style={[styles.input, { 
               borderColor: themeColors.border,
@@ -147,32 +168,32 @@ const ExpenseScreen = () => {
             }]}
             value={description}
             onChangeText={setDescription}
-            placeholder="Expense description"
+            placeholder={t('expenseDescription')}
             placeholderTextColor={themeColors.secondaryText}
           />
         </View>
 
         <View style={styles.formGroup}>
-          <Text style={[styles.label, { color: themeColors.primaryText }]}>Category</Text>
+          <Text style={[styles.label, { color: themeColors.primaryText }]}>{t('category')}</Text>
           <View style={styles.categoryContainer}>
             {categories.map((cat) => (
               <TouchableOpacity
-                key={cat}
+                key={cat.id}
                 style={[
                   styles.categoryButton,
                   { backgroundColor: isDarkMode ? themeColors.border : '#f0f0f0' },
-                  category === cat && [styles.categoryButtonActive, { backgroundColor: themeColors.danger }],
+                  category === cat.id && [styles.categoryButtonActive, { backgroundColor: themeColors.danger }],
                 ]}
-                onPress={() => setCategory(cat)}
+                onPress={() => setCategory(cat.id)}
               >
                 <Text
                   style={[
                     styles.categoryButtonText,
                     { color: themeColors.primaryText },
-                    category === cat && styles.categoryButtonTextActive,
+                    category === cat.id && styles.categoryButtonTextActive,
                   ]}
                 >
-                  {cat}
+                  {cat.label}
                 </Text>
               </TouchableOpacity>
             ))}
@@ -180,7 +201,7 @@ const ExpenseScreen = () => {
         </View>
 
         <View style={styles.formGroup}>
-          <Text style={[styles.label, { color: themeColors.primaryText }]}>Date</Text>
+          <Text style={[styles.label, { color: themeColors.primaryText }]}>{t('date')}</Text>
           <TextInput
             style={[styles.input, { 
               borderColor: themeColors.border,
@@ -198,37 +219,37 @@ const ExpenseScreen = () => {
           style={[
             styles.addButton, 
             { backgroundColor: themeColors.danger },
-            isLoading && [styles.addButtonDisabled, { backgroundColor: themeColors.secondaryText }]
-          ]} 
+            isLoading && styles.disabledButton,
+          ]}
           onPress={handleAddExpense}
           disabled={isLoading}
         >
           {isLoading ? (
             <ActivityIndicator color="white" size="small" />
           ) : (
-            <Text style={styles.addButtonText}>Add Expense</Text>
+            <Text style={styles.addButtonText}>{t('add')}</Text>
           )}
         </TouchableOpacity>
       </View>
 
-      {/* 历史记录部分 */}
-      <View style={[styles.historyContainer, { backgroundColor: themeColors.card }]}>
-        <Text style={[styles.historyTitle, { color: themeColors.primaryText }]}>Expense History</Text>
+      <View style={[styles.historySection, { backgroundColor: themeColors.card }]}>
+        <Text style={[styles.historySectionTitle, { color: themeColors.primaryText }]}>
+          {t('expenseHistory')}
+        </Text>
         
         {isLoadingHistory ? (
-          <View style={styles.loadingContainer}>
-            <ActivityIndicator size="small" color={themeColors.primary} />
-            <Text style={[styles.loadingText, { color: themeColors.secondaryText }]}>Loading history...</Text>
-          </View>
+          <ActivityIndicator 
+            color={themeColors.primary} 
+            size="large" 
+            style={styles.loadingIndicator} 
+          />
         ) : expenseHistory.length > 0 ? (
-          expenseHistory.map((item) => (
-            <View key={item.id}>
-              {renderHistoryItem({ item })}
-            </View>
-          ))
+          expenseHistory.map(item => renderHistoryItem(item))
         ) : (
           <View style={styles.emptyState}>
-            <Text style={[styles.emptyStateText, { color: themeColors.secondaryText }]}>No expense records found</Text>
+            <Text style={[styles.emptyStateText, { color: themeColors.secondaryText }]}>
+              {t('noExpenseRecords')}
+            </Text>
           </View>
         )}
       </View>
@@ -305,7 +326,7 @@ const styles = StyleSheet.create({
     alignItems: 'center',
     marginTop: 10,
   },
-  addButtonDisabled: {
+  disabledButton: {
     backgroundColor: '#95a5a6',
   },
   addButtonText: {
@@ -313,11 +334,9 @@ const styles = StyleSheet.create({
     fontSize: 16,
     fontWeight: 'bold',
   },
-  // 历史记录样式
-  historyContainer: {
+  historySection: {
     margin: 15,
     padding: 15,
-    backgroundColor: 'white',
     borderRadius: 10,
     elevation: 2,
     shadowColor: '#000',
@@ -325,7 +344,7 @@ const styles = StyleSheet.create({
     shadowOpacity: 0.1,
     shadowRadius: 4,
   },
-  historyTitle: {
+  historySectionTitle: {
     fontSize: 18,
     fontWeight: 'bold',
     marginBottom: 15,
@@ -359,13 +378,9 @@ const styles = StyleSheet.create({
     color: '#999',
     marginTop: 4,
   },
-  loadingContainer: {
+  loadingIndicator: {
     padding: 20,
     alignItems: 'center',
-  },
-  loadingText: {
-    marginTop: 10,
-    color: '#999',
   },
   emptyState: {
     padding: 20,
