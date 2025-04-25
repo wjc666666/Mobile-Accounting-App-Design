@@ -28,11 +28,11 @@ const IncomeScreen = () => {
   const [isLoadingHistory, setIsLoadingHistory] = useState(false);
 
   const categories = [
-    { id: 'salary', label: t('salary') },
-    { id: 'bonus', label: t('bonus') },
-    { id: 'investment', label: t('investment') },
-    { id: 'freelance', label: t('freelance') },
-    { id: 'other', label: t('otherIncome') }
+    { id: 'salary', label: t('incomeCategories.salary') },
+    { id: 'bonus', label: t('incomeCategories.bonus') },
+    { id: 'investment', label: t('incomeCategories.investment') },
+    { id: 'freelance', label: t('incomeCategories.freelance') },
+    { id: 'other', label: t('incomeCategories.otherIncome') }
   ];
 
   // 获取历史记录
@@ -110,11 +110,11 @@ const IncomeScreen = () => {
   };
 
   // 渲染历史记录项
-  const renderHistoryItem = ({ item }: { item: IncomeRecord }) => (
+  const renderHistoryItem = (item: IncomeRecord) => (
     <View style={[styles.historyItem, { backgroundColor: themeColors.card, borderBottomColor: themeColors.border }]}>
       <View style={styles.historyItemHeader}>
         <Text style={[styles.historyCategory, { color: themeColors.primaryText }]}>
-          {t(item.category.toLowerCase()) || item.category}
+          {t(`incomeCategories.${item.category.toLowerCase()}`) || item.category}
         </Text>
         <Text style={[styles.historyAmount, { color: themeColors.success }]}>
           +{formatAmount(item.amount)}
@@ -128,7 +128,7 @@ const IncomeScreen = () => {
   return (
     <ScrollView style={[styles.container, { backgroundColor: themeColors.background }]}>
       <View style={[styles.header, { backgroundColor: themeColors.success }]}>
-        <Text style={styles.headerTitle}>{t('addIncome')}</Text>
+        <Text style={styles.headerTitle}>{t('income.addIncome')}</Text>
       </View>
 
       <View style={[styles.form, { 
@@ -137,7 +137,7 @@ const IncomeScreen = () => {
       }]}>
         <View style={styles.formGroup}>
           <Text style={[styles.label, { color: themeColors.primaryText }]}>
-            {t('amount')} ({getCurrencySymbol(currency)})
+            {t('income.amount')} ({getCurrencySymbol(currency)})
           </Text>
           <TextInput
             style={[styles.input, { 
@@ -154,7 +154,7 @@ const IncomeScreen = () => {
         </View>
 
         <View style={styles.formGroup}>
-          <Text style={[styles.label, { color: themeColors.primaryText }]}>{t('description')}</Text>
+          <Text style={[styles.label, { color: themeColors.primaryText }]}>{t('income.description')}</Text>
           <TextInput
             style={[styles.input, { 
               borderColor: themeColors.border,
@@ -163,13 +163,13 @@ const IncomeScreen = () => {
             }]}
             value={description}
             onChangeText={setDescription}
-            placeholder={t('incomeDescription')}
+            placeholder={t('income.description')}
             placeholderTextColor={themeColors.secondaryText}
           />
         </View>
 
         <View style={styles.formGroup}>
-          <Text style={[styles.label, { color: themeColors.primaryText }]}>{t('category')}</Text>
+          <Text style={[styles.label, { color: themeColors.primaryText }]}>{t('income.category')}</Text>
           <View style={styles.categoryContainer}>
             {categories.map((cat) => (
               <TouchableOpacity
@@ -196,7 +196,7 @@ const IncomeScreen = () => {
         </View>
 
         <View style={styles.formGroup}>
-          <Text style={[styles.label, { color: themeColors.primaryText }]}>{t('date')}</Text>
+          <Text style={[styles.label, { color: themeColors.primaryText }]}>{t('income.date')}</Text>
           <TextInput
             style={[styles.input, { 
               borderColor: themeColors.border,
@@ -222,14 +222,14 @@ const IncomeScreen = () => {
           {isLoading ? (
             <ActivityIndicator color="white" size="small" />
           ) : (
-            <Text style={styles.addButtonText}>{t('add')}</Text>
+            <Text style={styles.addButtonText}>{t('common.add')}</Text>
           )}
         </TouchableOpacity>
       </View>
 
       <View style={[styles.historyContainer, { backgroundColor: themeColors.card }]}>
         <Text style={[styles.historyTitle, { color: themeColors.primaryText }]}>
-          {t('incomeHistory')}
+          {t('income.incomeHistory')}
         </Text>
         
         {isLoadingHistory ? (
@@ -240,14 +240,14 @@ const IncomeScreen = () => {
           />
         ) : incomeHistory.length > 0 ? (
           incomeHistory.map(item => (
-            <React.Fragment key={item.id}>
-              {renderHistoryItem({item})}
-            </React.Fragment>
+            <View key={item.id}>
+              {renderHistoryItem(item)}
+            </View>
           ))
         ) : (
           <View style={styles.emptyState}>
             <Text style={[styles.emptyStateText, { color: themeColors.secondaryText }]}>
-              {t('noIncomeRecords')}
+              {t('income.noIncome')}
             </Text>
           </View>
         )}
