@@ -4,29 +4,68 @@ A comprehensive mobile accounting application that helps you track income, expen
 
 ## Project Overview
 
-JCEco is a full-stack mobile application designed to provide users with a seamless financial tracking experience. The app allows users to record their income and expenses, view financial statistics, and analyze their spending habits. It also integrates with popular payment apps like Alipay and WeChat to import transaction data.
+JCEco is a full-stack mobile application designed to provide users with a seamless financial tracking experience. The app allows users to record their income and expenses, view financial statistics, and analyze their spending habits. It also integrates with popular payment apps like Alipay and WeChat to import transaction data and provides AI-powered financial advice.
 
 ## Project Structure
 
 ```
 JCEco/
 ├── android/                # Android native code
-│   └── app/                # Android app configuration and native modules
+│   ├── app/                # Android app configuration and native modules
+│   │   ├── src/            # Java source code
+│   │   │   └── main/
+│   │   │       ├── java/
+│   │   │       │   └── com/
+│   │   │       │       └── jceco/
+│   │   │       │           ├── MainApplication.kt
+│   │   │       │           └── MainActivity.kt
+│   │   │       └── res/    # Android resources
+│   │   └── build.gradle    # App-level build configuration
+│   └── build.gradle        # Project-level build configuration
 ├── ios/                    # iOS native code
+│   ├── JCEco/              # iOS app files
+│   └── Podfile             # iOS dependencies
 ├── src/                    # React Native frontend source code
 │   ├── components/         # Reusable UI components
+│   │   ├── BudgetCard.tsx
+│   │   ├── CategorySelector.tsx
+│   │   └── TransactionList.tsx
 │   ├── navigation/         # Navigation configuration
+│   │   └── AppNavigator.tsx # Main navigation setup
 │   ├── screens/            # Application screens
-│   │   ├── FinanceAIScreen.tsx  # AI Financial Advisor screen
-│   │   └── ...             # Other screen components
-│   └── utils/              # Utility functions and native module bridges
+│   │   ├── AuthScreens/
+│   │   │   ├── LoginScreen.tsx
+│   │   │   └── RegisterScreen.tsx
+│   │   ├── HomeScreen.tsx  # Main dashboard
+│   │   ├── IncomeScreen.tsx # Income tracking
+│   │   ├── ExpenseScreen.tsx # Expense tracking
+│   │   ├── StatisticsScreen.tsx # Financial statistics
+│   │   ├── SettingsScreen.tsx # App settings
+│   │   └── FinanceAIScreen.tsx # AI Financial Advisor
+│   └── utils/              # Utility functions and contexts
 │       ├── api.ts          # API client and endpoints
-│       ├── ThemeContext.tsx  # Theme provider for dark/light mode
-│       ├── env.d.ts        # TypeScript definitions for env variables
-│       └── ...             # Other utility files
+│       ├── AuthContext.tsx # Authentication provider
+│       ├── CurrencyContext.tsx # Currency conversion
+│       ├── ThemeContext.tsx # Theme provider for dark/light mode
+│       ├── LocalizationContext.tsx # Multilanguage support
+│       ├── config.ts       # Application configuration
+│       └── env.d.ts        # TypeScript definitions for env variables
 ├── backend/                # Node.js backend
+│   ├── controllers/        # Route controllers
+│   │   ├── authController.js
+│   │   ├── incomeController.js
+│   │   ├── expenseController.js
+│   │   └── budgetController.js
+│   ├── middleware/         # Express middleware
+│   │   ├── auth.js         # Authentication middleware
+│   │   └── validation.js   # Input validation
+│   ├── routes/             # API routes
+│   │   ├── auth.js
+│   │   ├── income.js
+│   │   ├── expense.js
+│   │   └── budget.js
 │   ├── database/           # Database related files
-│   │   ├── alter_tables.sql  # SQL for altering tables
+│   │   ├── alter_tables.sql # SQL for altering tables
 │   │   ├── db.js           # Database connection module
 │   │   ├── init.js         # Database initialization script
 │   │   ├── init_data.sql   # Initial data for tables
@@ -38,18 +77,25 @@ JCEco/
 │   ├── package.json        # Backend dependencies
 │   └── server.js           # Express server
 ├── .env                    # Frontend environment variables (not in Git)
+├── App.tsx                 # Application entry point
 ├── babel.config.js         # Babel configuration with env support
+├── index.js                # React Native entry point
+├── metro.config.js         # Metro bundler configuration
+├── tsconfig.json           # TypeScript configuration
+├── package.json            # Project dependencies
 └── __tests__/              # Test files
+    └── App.test.tsx        # Application tests
 ```
 
 ## Tech Stack
 
 ### Frontend
 - **React Native**: Cross-platform mobile application framework
-- **React Navigation**: Navigation library for React Native
+- **React Navigation 6**: Navigation library for React Native
 - **Axios**: HTTP client for API requests
 - **AsyncStorage**: Local storage for persisting data
 - **React Native Paper**: Material Design component library
+- **OpenAI API**: For AI-powered financial advice
 
 ### Backend
 - **Node.js**: JavaScript runtime
@@ -70,10 +116,49 @@ JCEco/
 - **Financial Statistics**: Visualize spending patterns and income sources
 - **Budget Analysis**: Analyze spending against budget goals
 - **Multi-Currency Support**: Support for USD, EUR, GBP, JPY, CNY currencies
+- **Multi-Language Support**: English, Chinese, and Spanish language options
 - **Transaction Import**: Import transactions from payment apps (Alipay and WeChat)
 - **Native App Integration**: Launch Alipay and WeChat directly from the app (Android)
 - **AI Financial Analysis**: Get personalized financial insights and advice using AI technology
 - **Dark Mode Support**: Customize the app appearance with light and dark themes
+- **Transaction History**: View and filter recent transactions
+- **Real-time Currency Conversion**: Convert amounts between different currencies
+
+## Recent Updates
+
+### Dark Mode Implementation
+- Added comprehensive theme system with light and dark modes
+- Created ThemeContext for managing theme state throughout the app
+- Implemented theme-aware styling for all screens and components
+- Added toggle in Settings screen for user preference
+- Made theme selection persistent across app restarts
+
+### AI Financial Advisor
+- Integrated OpenAI API for financial analysis and advice
+- Created dedicated FinanceAIScreen for AI interaction
+- Implemented secure API key management through environment variables
+- Added ability to analyze spending patterns and provide personalized recommendations
+- Included preset financial questions for easier user interaction
+
+### Multilanguage Support
+- Added support for English, Chinese, and Spanish languages
+- Created LocalizationContext for managing translations
+- Made all UI text configurable through translation system
+- Added language selection in Settings screen
+- Implemented persistent language preference
+
+### Bug Fixes
+- Resolved duplicate key issue in LocalizationContext
+- Fixed transaction list rendering with unique keys
+- Improved budget calculation accuracy
+- Enhanced error handling for API requests
+- Fixed currency conversion issues in transaction displays
+
+### Performance Improvements
+- Optimized rendering of transaction lists
+- Improved loading states for better user experience
+- Enhanced budget analysis card performance
+- Reduced unnecessary API calls
 
 ## Installation and Setup
 
@@ -207,6 +292,26 @@ The app includes a comprehensive theme system that supports both light and dark 
 - Automatic theme switching based on device preferences
 - Custom navigation themes for consistent navigation experience
 
+## Multilanguage Support
+
+The app supports multiple languages to cater to a global user base:
+
+### Supported Languages
+- English (Default)
+- Chinese (Simplified)
+- Spanish
+
+### Features
+- Language selection in Settings screen
+- Real-time language switching without app restart
+- Persistent language preference across sessions
+- Comprehensive translations for all UI elements
+
+### Implementation
+- LocalizationContext for managing translations
+- AsyncStorage for saving language preference
+- Translation keys organized by feature area
+
 ## API Documentation
 
 ### Authentication
@@ -276,69 +381,18 @@ The app includes a comprehensive theme system that supports both light and dark 
 - **Method**: `GET`
 - **Auth**: JWT Token Required
 
-### Financial AI Analysis
+### Budget Analysis
 
-#### Analyze Financial Data
-- **URL**: `/api/finance/analyze`
-- **Method**: `POST`
+#### Get Budget Analysis
+- **URL**: `/api/budget/analysis`
+- **Method**: `GET`
 - **Auth**: JWT Token Required
-- **Body**:
-  ```json
-  {
-    "financialData": "string", // Financial summary data
-    "question": "string"       // User's financial question
-  }
-  ```
-- **Response**:
-  ```json
-  {
-    "analysis": "string"       // AI-generated financial analysis and advice
-  }
-  ```
 
-### Transaction Import
+## Development Team
 
-#### Import Transactions
-- **URL**: `/api/import`
-- **Method**: `POST`
-- **Auth**: JWT Token Required
-- **Body**:
-  ```json
-  {
-    "transactions": [
-      {
-        "id": "string",
-        "date": "YYYY-MM-DD",
-        "amount": "number",
-        "description": "string",
-        "category": "string",
-        "type": "income|expense",
-        "source": "alipay|wechat"
-      }
-    ]
-  }
-  ```
-
-## Development
-
-### Running Tests
-```bash
-npm test
-```
-
-### Debugging
-For debugging the React Native application:
-1. In Android Studio: Use the built-in debugger
-2. In Chrome: Use the React Native Debugger extension
-3. For native module debugging: Check Logcat in Android Studio with filter tag "AppLauncherModule"
-
-## Contributing
-
-1. Fork the repository
-2. Create your feature branch (`git checkout -b feature/amazing-feature`)
-3. Commit your changes (`git commit -m 'Add some amazing feature'`)
-4. Push to the branch (`git push origin feature/amazing-feature`)
-5. Open a Pull Request
+- Frontend Developers: Team JCEco
+- Backend Developers: Team JCEco
+- UI/UX Design: Team JCEco
 
 ## License
 
@@ -346,6 +400,16 @@ This project is licensed under the MIT License - see the LICENSE file for detail
 
 ## Acknowledgments
 
-- React Native community
-- Express.js community
-- All contributors who have helped to improve this project
+- React Native Community
+- OpenAI for providing the AI capabilities
+- All contributors and testers
+
+## Future Roadmap
+
+- **Budget Goal Setting**: Set and track financial goals
+- **Expense Forecasting**: Predict future expenses based on spending patterns
+- **Bill Reminders**: Set up notifications for upcoming bills
+- **Advanced Reports**: More detailed financial reports and visualizations
+- **Cloud Backup**: Secure cloud backup for financial data
+- **Family Sharing**: Share financial information with family members
+- **Receipt Scanning**: OCR integration for automated expense entry
