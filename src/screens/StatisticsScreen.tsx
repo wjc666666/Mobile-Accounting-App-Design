@@ -345,7 +345,13 @@ const StatisticsScreen = () => {
       .slice(0, 5);
     
     const chartData = {
-      labels: topCategories.map(cat => t(cat.name.toLowerCase()) || cat.name.substring(0, 6)), // Use translation or truncate long names
+      labels: topCategories.map(cat => {
+        // Try to find translation for the category
+        const categoryKey = activeTab === 'income' 
+          ? `incomeCategories.${cat.name.toLowerCase()}` 
+          : `expenseCategories.${cat.name.toLowerCase()}`;
+        return t(categoryKey) || cat.name.substring(0, 6);
+      }),
       datasets: [
         {
           data: topCategories.map(cat => cat.amount),
@@ -370,7 +376,7 @@ const StatisticsScreen = () => {
       return (
         <View style={styles.emptyState}>
           <Text style={[styles.emptyStateText, { color: themeColors.secondaryText }]}>
-            {t('noDataAvailable')}
+            {t('statistics.noDataAvailable')}
           </Text>
         </View>
       );
@@ -400,7 +406,7 @@ const StatisticsScreen = () => {
       return (
         <View style={styles.emptyState}>
           <Text style={[styles.emptyStateText, { color: themeColors.secondaryText }]}>
-            No {activeTab} data available
+            {t('statistics.noDataAvailable')}
           </Text>
         </View>
       );
@@ -408,32 +414,39 @@ const StatisticsScreen = () => {
     
     return (
       <View style={styles.categoryList}>
-        {categories.map((category, index) => (
-          <View key={index} style={styles.categoryItem}>
-            <View style={styles.categoryHeader}>
-              <Text style={[styles.categoryName, { color: themeColors.primaryText }]}>
-                {t(category.name.toLowerCase()) || category.name}
-              </Text>
-              <Text style={[styles.categoryAmount, { color: themeColors.primaryText }]}>
-                {formatAmount(category.amount)}
+        {categories.map((category, index) => {
+          // Get the appropriate translation key based on category type
+          const categoryKey = activeTab === 'income' 
+            ? `incomeCategories.${category.name.toLowerCase()}` 
+            : `expenseCategories.${category.name.toLowerCase()}`;
+          
+          return (
+            <View key={index} style={styles.categoryItem}>
+              <View style={styles.categoryHeader}>
+                <Text style={[styles.categoryName, { color: themeColors.primaryText }]}>
+                  {t(categoryKey) || category.name}
+                </Text>
+                <Text style={[styles.categoryAmount, { color: themeColors.primaryText }]}>
+                  {formatAmount(category.amount)}
+                </Text>
+              </View>
+              <View style={[styles.percentageBarContainer, { backgroundColor: themeColors.border }]}>
+                <View 
+                  style={[
+                    styles.percentageBar, 
+                    { 
+                      width: `${category.percentage}%`,
+                      backgroundColor: activeTab === 'income' ? '#2ecc71' : '#e74c3c' 
+                    }
+                  ]} 
+                />
+              </View>
+              <Text style={[styles.percentageText, { color: themeColors.secondaryText }]}>
+                {category.percentage}% {t('statistics.percentageOfTotal')}
               </Text>
             </View>
-            <View style={[styles.percentageBarContainer, { backgroundColor: themeColors.border }]}>
-              <View 
-                style={[
-                  styles.percentageBar, 
-                  { 
-                    width: `${category.percentage}%`,
-                    backgroundColor: activeTab === 'income' ? '#2ecc71' : '#e74c3c' 
-                  }
-                ]} 
-              />
-            </View>
-            <Text style={[styles.percentageText, { color: themeColors.secondaryText }]}>
-              {category.percentage}% of total
-            </Text>
-          </View>
-        ))}
+          );
+        })}
       </View>
     );
   };
@@ -462,7 +475,7 @@ const StatisticsScreen = () => {
       }
     >
       <View style={[styles.header, { backgroundColor: themeColors.primary }]}>
-        <Text style={styles.headerTitle}>{t('statistics')}</Text>
+        <Text style={styles.headerTitle}>{t('statistics.title')}</Text>
         <View style={styles.tabContainer}>
           <TouchableOpacity 
             style={[
@@ -472,7 +485,7 @@ const StatisticsScreen = () => {
             onPress={() => setActiveTab('expense')}
           >
             <Text style={[styles.tabText, activeTab === 'expense' && styles.activeTabText]}>
-              {t('expenses')}
+              {t('statistics.expenses')}
             </Text>
           </TouchableOpacity>
           <TouchableOpacity 
@@ -483,7 +496,7 @@ const StatisticsScreen = () => {
             onPress={() => setActiveTab('income')}
           >
             <Text style={[styles.tabText, activeTab === 'income' && styles.activeTabText]}>
-              {t('income')}
+              {t('statistics.income')}
             </Text>
           </TouchableOpacity>
         </View>
@@ -499,7 +512,7 @@ const StatisticsScreen = () => {
               fetchData().finally(() => setIsLoading(false));
             }}
           >
-            <Text style={styles.retryButtonText}>{t('retry')}</Text>
+            <Text style={styles.retryButtonText}>{t('common.retry')}</Text>
           </TouchableOpacity>
         </View>
       )}
@@ -508,7 +521,7 @@ const StatisticsScreen = () => {
         <View style={styles.summaryRow}>
           <View style={styles.summaryItem}>
             <Text style={[styles.summaryLabel, { color: themeColors.secondaryText }]}>
-              {t('income')}
+              {t('statistics.income')}
             </Text>
             <Text style={[styles.incomeValue, { color: themeColors.success }]}>
               {formatAmount(incomeData.total)}
@@ -516,7 +529,7 @@ const StatisticsScreen = () => {
           </View>
           <View style={styles.summaryItem}>
             <Text style={[styles.summaryLabel, { color: themeColors.secondaryText }]}>
-              {t('expenses')}
+              {t('statistics.expenses')}
             </Text>
             <Text style={[styles.expenseValue, { color: themeColors.danger }]}>
               {formatAmount(expenseData.total)}
@@ -526,7 +539,7 @@ const StatisticsScreen = () => {
         <View style={styles.summaryRow}>
           <View style={styles.summaryItem}>
             <Text style={[styles.summaryLabel, { color: themeColors.secondaryText }]}>
-              {t('balance')}
+              {t('statistics.balance')}
             </Text>
             <Text style={[
               styles.balanceValue, 
@@ -537,7 +550,7 @@ const StatisticsScreen = () => {
           </View>
           <View style={styles.summaryItem}>
             <Text style={[styles.summaryLabel, { color: themeColors.secondaryText }]}>
-              {t('savingRate')}
+              {t('statistics.savingRate')}
             </Text>
             <Text style={[
               styles.rateValue, 
@@ -551,21 +564,21 @@ const StatisticsScreen = () => {
 
       <View style={[styles.chartsCard, { backgroundColor: themeColors.card }]}>
         <Text style={[styles.sectionTitle, { color: themeColors.primaryText }]}>
-          {activeTab === 'expense' ? t('expenseByCategory') : t('incomeByCategory')}
+          {activeTab === 'expense' ? t('statistics.expenseByCategory') : t('statistics.incomeByCategory')}
         </Text>
         {getChartData()}
       </View>
 
       <View style={[styles.categoriesCard, { backgroundColor: themeColors.card }]}>
         <Text style={[styles.sectionTitle, { color: themeColors.primaryText }]}>
-          {activeTab === 'expense' ? t('expenseDetails') : t('incomeDetails')}
+          {activeTab === 'expense' ? t('statistics.expenseDetails') : t('statistics.incomeDetails')}
         </Text>
         {renderCategoryList()}
       </View>
 
       <View style={styles.section}>
         <Text style={[styles.sectionTitle, { color: themeColors.primaryText }]}>
-          Import Transactions
+          {t('statistics.importTransactions')}
         </Text>
         <ImportTransactions onImportSuccess={() => {
           setIsLoading(true);

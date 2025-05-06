@@ -57,6 +57,8 @@ CREATE TABLE IF NOT EXISTS goals (
     target_amount DECIMAL(10, 2) NOT NULL,
     current_amount DECIMAL(10, 2) DEFAULT 0,
     deadline DATE,
+    description TEXT,
+    status VARCHAR(20) DEFAULT 'active',
     created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
     updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
     FOREIGN KEY (user_id) REFERENCES users(id) ON DELETE CASCADE

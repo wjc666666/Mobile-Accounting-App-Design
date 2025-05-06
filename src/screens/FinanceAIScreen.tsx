@@ -64,12 +64,12 @@ const FinanceAIScreen = () => {
     });
 
     const summary = `
-${t('financeAI')} ${t('summary')}:
-- ${t('income')}: ${formatAmount(totalIncome)}
-- ${t('expenses')}: ${formatAmount(totalExpense)}
-- ${t('balance')}: ${formatAmount(balance)}
-- ${t('savingRate')}: ${savingRate.toFixed(1)}%
-${maxCategory ? `- ${t('topExpenses')}: ${t(maxCategory.toLowerCase()) || maxCategory} (${formatAmount(maxAmount)})` : ''}
+${t('financeAI.summary')}:
+- ${t('income.title')}: ${formatAmount(totalIncome)}
+- ${t('expenses.title')}: ${formatAmount(totalExpense)}
+- ${t('statistics.balance')}: ${formatAmount(balance)}
+- ${t('budget.savingRate')}: ${savingRate.toFixed(1)}%
+${maxCategory ? `- ${t('budget.topExpenses')}: ${t(`expenseCategories.${maxCategory.toLowerCase()}`) || maxCategory} (${formatAmount(maxAmount)})` : ''}
     `;
 
     setFinancialSummary(summary);
@@ -129,10 +129,10 @@ ${maxCategory ? `- ${t('topExpenses')}: ${t(maxCategory.toLowerCase()) || maxCat
 
   // Default questions list
   const defaultQuestions = [
-    t('howToSave'),
-    t('spendingTrends'),
-    t('budgetRecommendations'),
-    t('investmentAdvice')
+    t('financeAI.howToSave'),
+    t('financeAI.spendingTrends'),
+    t('financeAI.budgetRecommendations'),
+    t('financeAI.investmentAdvice')
   ];
 
   // Ask the AI for financial advice
@@ -158,27 +158,27 @@ ${maxCategory ? `- ${t('topExpenses')}: ${t(maxCategory.toLowerCase()) || maxCat
   return (
     <ScrollView style={[styles.container, { backgroundColor: themeColors.background }]}>
       <View style={[styles.header, { backgroundColor: themeColors.primary }]}>
-        <Text style={styles.headerTitle}>{t('financeAI')}</Text>
+        <Text style={styles.headerTitle}>{t('financeAI.title')}</Text>
       </View>
 
       {isDataLoading ? (
         <View style={styles.loadingContainer}>
           <ActivityIndicator size="large" color={themeColors.primary} />
-          <Text style={[styles.loadingText, { color: themeColors.secondaryText }]}>{t('analyzingData')}</Text>
+          <Text style={[styles.loadingText, { color: themeColors.secondaryText }]}>{t('financeAI.analyzingData')}</Text>
         </View>
       ) : (
         <>
           <View style={[styles.summaryContainer, { backgroundColor: themeColors.card }]}>
-            <Text style={[styles.summaryTitle, { color: themeColors.primaryText }]}>{t('summary')}</Text>
+            <Text style={[styles.summaryTitle, { color: themeColors.primaryText }]}>{t('financeAI.summary')}</Text>
             <Text style={[styles.summaryText, { color: themeColors.primaryText }]}>
               {financialSummary}
             </Text>
           </View>
 
           <View style={[styles.aiContainer, { backgroundColor: themeColors.card }]}>
-            <Text style={[styles.aiTitle, { color: themeColors.primaryText }]}>{t('financeAI')}</Text>
+            <Text style={[styles.aiTitle, { color: themeColors.primaryText }]}>{t('financeAI.title')}</Text>
             <Text style={[styles.aiSubtitle, { color: themeColors.secondaryText }]}>
-              {t('askFinanceQuestion')}
+              {t('financeAI.askFinanceQuestion')}
             </Text>
 
             <View style={styles.questionContainer}>
@@ -188,7 +188,7 @@ ${maxCategory ? `- ${t('topExpenses')}: ${t(maxCategory.toLowerCase()) || maxCat
                   color: themeColors.primaryText,
                   borderColor: themeColors.border
                 }]}
-                placeholder={t('askFinanceQuestion')}
+                placeholder={t('financeAI.askFinanceQuestion')}
                 placeholderTextColor={themeColors.secondaryText}
                 value={question}
                 onChangeText={setQuestion}
@@ -202,7 +202,7 @@ ${maxCategory ? `- ${t('topExpenses')}: ${t(maxCategory.toLowerCase()) || maxCat
                 {isLoading ? (
                   <ActivityIndicator color="white" size="small" />
                 ) : (
-                  <Text style={styles.askButtonText}>{t('ask')}</Text>
+                  <Text style={styles.askButtonText}>{t('financeAI.ask')}</Text>
                 )}
               </TouchableOpacity>
             </View>
@@ -215,13 +215,13 @@ ${maxCategory ? `- ${t('topExpenses')}: ${t(maxCategory.toLowerCase()) || maxCat
                   backgroundColor: isDarkMode ? themeColors.card : '#f5f5f5' 
                 }
               ]}>
-                <Text style={[styles.responseTitle, { color: themeColors.primaryText }]}>{t('advice')}</Text>
+                <Text style={[styles.responseTitle, { color: themeColors.primaryText }]}>{t('financeAI.advice')}</Text>
                 <Text style={[styles.responseText, { color: themeColors.primaryText }]}>{aiResponse}</Text>
               </View>
             ) : null}
 
             <View style={styles.suggestedContainer}>
-              <Text style={[styles.suggestedTitle, { color: themeColors.primaryText }]}>{t('suggestedQuestions')}</Text>
+              <Text style={[styles.suggestedTitle, { color: themeColors.primaryText }]}>{t('financeAI.suggestedQuestions')}</Text>
               {defaultQuestions.map((q, index) => (
                 <TouchableOpacity 
                   key={index}

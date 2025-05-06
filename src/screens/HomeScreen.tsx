@@ -1,11 +1,12 @@
-import React, { useState } from 'react';
-import { View, Text, StyleSheet, ScrollView, ActivityIndicator, RefreshControl, TouchableOpacity, Image } from 'react-native';
+import React, { useState, useCallback } from 'react';
+import { View, Text, StyleSheet, ScrollView, ActivityIndicator, RefreshControl, TouchableOpacity, Image, Alert } from 'react-native';
 import { incomeAPI, expenseAPI, budgetAPI } from '../utils/api';
 import { useAuth } from '../utils/AuthContext';
 import { useTheme, lightTheme, darkTheme } from '../utils/ThemeContext';
 import { useLocalization } from '../utils/LocalizationContext';
 import { useCurrency } from '../utils/CurrencyContext';
-import { useFocusEffect } from '@react-navigation/native';
+import { useFocusEffect, useNavigation } from '@react-navigation/native';
+import type { NativeStackNavigationProp } from '@react-navigation/native-stack';
 import { ProgressBar } from 'react-native-paper';
 import { APP_ICON } from '../assets/girl';
 
@@ -27,7 +28,7 @@ const BudgetAnalysisCard = ({ budgetData }: { budgetData: any }) => {
   if (!budgetData || !budgetData.summary) {
     return (
       <View style={styles.emptyState}>
-        <Text style={[styles.emptyStateText, { color: themeColors.secondaryText }]}>{t('noDataAvailable')}</Text>
+        <Text style={[styles.emptyStateText, { color: themeColors.secondaryText }]}>{t('budget.noDataAvailable')}</Text>
       </View>
     );
   }
@@ -45,25 +46,25 @@ const BudgetAnalysisCard = ({ budgetData }: { budgetData: any }) => {
   return (
     <View style={[styles.budgetCard, { backgroundColor: themeColors.card }]}>
       <View style={styles.budgetHeader}>
-        <Text style={[styles.budgetTitle, { color: themeColors.primaryText }]}>{t('monthlyBudget')}</Text>
+        <Text style={[styles.budgetTitle, { color: themeColors.primaryText }]}>{t('budget.monthlyBudget')}</Text>
         <Text style={[styles.budgetPeriod, { color: themeColors.secondaryText }]}>
           {new Date(period.start).toLocaleDateString()} - {new Date(period.end).toLocaleDateString()}
         </Text>
       </View>
 
       <View style={styles.budgetRow}>
-        <Text style={[styles.budgetLabel, { color: themeColors.primaryText }]}>{t('income')}:</Text>
+        <Text style={[styles.budgetLabel, { color: themeColors.primaryText }]}>{t('budget.income')}:</Text>
         <Text style={styles.budgetIncomeValue}>{formatAmount(totalIncome)}</Text>
       </View>
 
       <View style={styles.budgetRow}>
-        <Text style={[styles.budgetLabel, { color: themeColors.primaryText }]}>{t('expenses')}:</Text>
+        <Text style={[styles.budgetLabel, { color: themeColors.primaryText }]}>{t('budget.expenses')}:</Text>
         <Text style={styles.budgetExpenseValue}>{formatAmount(totalExpense)}</Text>
       </View>
 
       <View style={styles.budgetProgressContainer}>
         <Text style={[styles.budgetProgressLabel, { color: themeColors.primaryText }]}>
-          {t('budgetUsed')}: {(budgetUtilization * 100).toFixed(0)}%
+          {t('budget.budgetUsed')}: {(budgetUtilization * 100).toFixed(0)}%
         </Text>
         <ProgressBar
           progress={budgetUtilization}
@@ -78,17 +79,17 @@ const BudgetAnalysisCard = ({ budgetData }: { budgetData: any }) => {
       }]}>
         <View style={styles.budgetSummaryItem}>
           <Text style={[styles.budgetSummaryValue, { color: themeColors.primaryText }]}>{formatAmount(balance)}</Text>
-          <Text style={[styles.budgetSummaryLabel, { color: themeColors.secondaryText }]}>{t('remaining')}</Text>
+          <Text style={[styles.budgetSummaryLabel, { color: themeColors.secondaryText }]}>{t('budget.remaining')}</Text>
         </View>
         <View style={styles.budgetSummaryItem}>
           <Text style={[styles.budgetSummaryValue, { color: themeColors.primaryText }]}>{savingRate.toFixed(1)}%</Text>
-          <Text style={[styles.budgetSummaryLabel, { color: themeColors.secondaryText }]}>{t('savingRate')}</Text>
+          <Text style={[styles.budgetSummaryLabel, { color: themeColors.secondaryText }]}>{t('budget.savingRate')}</Text>
         </View>
       </View>
 
       {categories && categories.length > 0 && (
         <View style={styles.topExpenseContainer}>
-          <Text style={[styles.topExpenseTitle, { color: themeColors.primaryText }]}>{t('topExpenses')}</Text>
+          <Text style={[styles.topExpenseTitle, { color: themeColors.primaryText }]}>{t('budget.topExpenses')}</Text>
           {categories.slice(0, 3).map((category: any, index: number) => {
             // 安全处理金额，确保它是一个有效的数字
             let amountValue = 0;
@@ -104,7 +105,16 @@ const BudgetAnalysisCard = ({ budgetData }: { budgetData: any }) => {
             return (
               <View key={index} style={styles.topExpenseItem}>
                 <Text style={[styles.topExpenseCategory, { color: themeColors.primaryText }]}>
-                  {t(category?.category.toLowerCase()) || category?.category || t('unknown')}
+                  {(() => {
+                    // 确保类别名称标准化并有效
+                    if (!category?.category) return t('budget.unknown');
+                    const lowerCaseCategory = category.category.toLowerCase();
+                    // 尝试使用翻译，如果不存在则显示原始类别
+                    const translationKey = `expenseCategories.${lowerCaseCategory}`;
+                    const translatedCategory = t(translationKey);
+                    // 如果翻译键不存在（返回了原始翻译键），则使用原始类别名称
+                    return translationKey !== translatedCategory ? translatedCategory : category.category;
+                  })()}
                 </Text>
                 <Text style={styles.topExpenseAmount}>
                   {formatAmount(amountValue)}
@@ -118,6 +128,14 @@ const BudgetAnalysisCard = ({ budgetData }: { budgetData: any }) => {
   );
 };
 
+// 定义导航类型
+type RootStackParamList = {
+  Income: { editItem?: Transaction } | undefined;
+  Expense: { editItem?: Transaction } | undefined;
+};
+
+type NavigationProp = NativeStackNavigationProp<RootStackParamList>;
+
 const HomeScreen = () => {
   const { user, logout } = useAuth();
   const { isDarkMode } = useTheme();
@@ -130,6 +148,7 @@ const HomeScreen = () => {
   const [expenses, setExpenses] = useState<Transaction[]>([]);
   const [budgetAnalysis, setBudgetAnalysis] = useState<any>(null);
   const [error, setError] = useState<string | null>(null);
+  const navigation = useNavigation<NavigationProp>();
 
   // Ensure incomes and expenses are arrays
   const safeIncomes = Array.isArray(incomes) ? incomes : [];
@@ -163,8 +182,8 @@ const HomeScreen = () => {
   // Calculate balance - ensure it's a valid number
   const balance = isNaN(totalIncome - totalExpense) ? 0 : (totalIncome - totalExpense);
 
-  // Fetch data
-  const fetchData = async () => {
+  // 将 fetchData 包装在 useCallback 中
+  const fetchData = useCallback(async () => {
     try {
       setError(null);
       console.log('Starting to fetch data...');
@@ -306,29 +325,20 @@ const HomeScreen = () => {
         errorMessage = `${t('error')}: ${error.message}`;
       }
       setError(errorMessage);
+    } finally {
+      setIsLoading(false);
+      setIsRefreshing(false);
     }
-  };
+  }, [t]);  // 空依赖数组，因为所有依赖都是稳定的
 
   // Use useFocusEffect to refresh data when screen is focused
   useFocusEffect(
     React.useCallback(() => {
-      console.log('Main page gained focus, refreshing data...');
-      setIsLoading(true);
-      fetchData().finally(() => {
-        setIsLoading(false);
-        setIsRefreshing(false);
-        console.log('Data refresh completed');
-        
-        // Debug the state after data is loaded
-        setTimeout(() => {
-          console.log('After refresh - Income length:', incomes.length);
-          console.log('After refresh - Total income:', totalIncome);
-        }, 100); // Small delay to ensure state is updated
-      });
+      fetchData();
       return () => {
-        // Cleanup when screen loses focus
+        // Cleanup function
       };
-    }, [incomes.length, totalIncome]) // Include missing dependencies
+    }, [fetchData]) // 添加 fetchData 作为依赖项
   );
 
   // Pull to refresh
@@ -378,6 +388,128 @@ const HomeScreen = () => {
       .slice(0, 5); // Only show the 5 most recent
   };
 
+  // 处理删除收入
+  const handleDeleteIncome = async (id: number) => {
+    Alert.alert(
+      t('common.confirm'),
+      t('income.deleteConfirm'),
+      [
+        {
+          text: t('common.cancel'),
+          style: 'cancel'
+        },
+        {
+          text: t('common.delete'),
+          style: 'destructive',
+          onPress: async () => {
+            try {
+              await incomeAPI.deleteIncome(id);
+              Alert.alert(t('common.success'), t('income.deleteSuccess'));
+              fetchData(); // 重新加载数据
+            } catch (error) {
+              console.error('Failed to delete income:', error);
+              Alert.alert(t('common.error'), t('income.deleteFailed'));
+            }
+          }
+        }
+      ]
+    );
+  };
+
+  // 处理删除支出
+  const handleDeleteExpense = async (id: number) => {
+    Alert.alert(
+      t('common.confirm'),
+      t('expenses.deleteConfirm'),
+      [
+        {
+          text: t('common.cancel'),
+          style: 'cancel'
+        },
+        {
+          text: t('common.delete'),
+          style: 'destructive',
+          onPress: async () => {
+            try {
+              await expenseAPI.deleteExpense(id);
+              Alert.alert(t('common.success'), t('expenses.deleteSuccess'));
+              fetchData(); // 重新加载数据
+            } catch (error) {
+              console.error('Failed to delete expense:', error);
+              Alert.alert(t('common.error'), t('expenses.deleteFailed'));
+            }
+          }
+        }
+      ]
+    );
+  };
+
+  // 处理编辑收入
+  const handleEditIncome = (item: Transaction) => {
+    navigation.navigate('Income', { editItem: item });
+  };
+
+  // 处理编辑支出
+  const handleEditExpense = (item: Transaction) => {
+    navigation.navigate('Expense', { editItem: item });
+  };
+
+  // 修改渲染交易项的函数
+  const renderTransactionItem = (item: Transaction, type: 'income' | 'expense') => {
+    const isIncome = type === 'income';
+    const amount = isIncome ? item.amount : -item.amount;
+    
+    return (
+      <View style={[styles.transactionItem, { backgroundColor: themeColors.card }]} key={`${type}-${item.id}`}>
+        <View style={styles.transactionHeader}>
+          <Text style={[styles.transactionCategory, { color: themeColors.primaryText }]}>
+            {(() => {
+              // 确保类别名称标准化并有效
+              const lowerCaseCategory = item.category.toLowerCase();
+              const translationKey = `${type}Categories.${lowerCaseCategory}`;
+              // 尝试使用翻译，如果不存在则显示原始类别
+              const translatedCategory = t(translationKey);
+              // 如果翻译键不存在（返回了原始翻译键），则使用原始类别名称
+              return translationKey !== translatedCategory ? translatedCategory : item.category;
+            })()}
+          </Text>
+          <Text style={[
+            styles.transactionAmount,
+            { color: isIncome ? themeColors.success : themeColors.danger }
+          ]}>
+            {isIncome ? '+' : '-'}{formatAmount(Math.abs(amount))}
+          </Text>
+        </View>
+        
+        <Text style={[styles.transactionDescription, { color: themeColors.primaryText }]}>
+          {item.description}
+        </Text>
+        
+        <View style={styles.transactionFooter}>
+          <Text style={[styles.transactionDate, { color: themeColors.secondaryText }]}>
+            {new Date(item.date).toLocaleDateString()}
+          </Text>
+          
+          <View style={styles.actionButtons}>
+            <TouchableOpacity
+              style={[styles.actionButton, { backgroundColor: themeColors.primary }]}
+              onPress={() => isIncome ? handleEditIncome(item) : handleEditExpense(item)}
+            >
+              <Text style={styles.actionButtonText}>{t('common.edit')}</Text>
+            </TouchableOpacity>
+            
+            <TouchableOpacity
+              style={[styles.actionButton, { backgroundColor: themeColors.danger }]}
+              onPress={() => isIncome ? handleDeleteIncome(item.id) : handleDeleteExpense(item.id)}
+            >
+              <Text style={styles.actionButtonText}>{t('common.delete')}</Text>
+            </TouchableOpacity>
+          </View>
+        </View>
+      </View>
+    );
+  };
+
   if (isLoading) {
     return (
       <View style={[styles.loadingContainer, { backgroundColor: themeColors.background }]}>
@@ -408,7 +540,7 @@ const HomeScreen = () => {
           <View style={styles.headerTextContainer}>
             <Text style={styles.headerTitle}>JCEco Finance</Text>
             <Text style={styles.headerSubtitle}>
-              {user ? `${t('welcome')}, ${user.username}` : t('personalFinanceAssistant')}
+              {user ? `${t('home.welcome')}, ${user.username}` : t('home.personalFinanceAssistant')}
             </Text>
           </View>
         </View>
@@ -416,7 +548,7 @@ const HomeScreen = () => {
           onPress={handleLogout} 
           style={[styles.logoutButton, { backgroundColor: 'rgba(255, 255, 255, 0.2)' }]}
         >
-          <Text style={styles.logoutText}>{t('logout')}</Text>
+          <Text style={styles.logoutText}>{t('settings.logout')}</Text>
         </TouchableOpacity>
       </View>
       
@@ -430,22 +562,22 @@ const HomeScreen = () => {
               fetchData().finally(() => setIsLoading(false));
             }}
           >
-            <Text style={styles.retryText}>{t('retry')}</Text>
+            <Text style={styles.retryText}>{t('common.retry')}</Text>
           </TouchableOpacity>
         </View>
       )}
 
       <View style={styles.summaryContainer}>
         <View style={[styles.summaryCard, { backgroundColor: themeColors.card }]}>
-          <Text style={[styles.summaryLabel, { color: themeColors.secondaryText }]}>{t('income')}</Text>
+          <Text style={[styles.summaryLabel, { color: themeColors.secondaryText }]}>{t('home.income')}</Text>
           <Text style={styles.incomeValue}>{formatAmount(totalIncome)}</Text>
         </View>
         <View style={[styles.summaryCard, { backgroundColor: themeColors.card }]}>
-          <Text style={[styles.summaryLabel, { color: themeColors.secondaryText }]}>{t('expenses')}</Text>
+          <Text style={[styles.summaryLabel, { color: themeColors.secondaryText }]}>{t('home.expenses')}</Text>
           <Text style={styles.expenseValue}>{formatAmount(totalExpense)}</Text>
         </View>
         <View style={[styles.summaryCard, { backgroundColor: themeColors.card }]}>
-          <Text style={[styles.summaryLabel, { color: themeColors.secondaryText }]}>{t('balance')}</Text>
+          <Text style={[styles.summaryLabel, { color: themeColors.secondaryText }]}>{t('home.balance')}</Text>
           <Text style={[
             styles.balanceValue, 
             balance >= 0 ? styles.positiveBalance : styles.negativeBalance
@@ -456,41 +588,20 @@ const HomeScreen = () => {
       </View>
       
       <View style={[styles.section, { backgroundColor: themeColors.card }]}>
-        <Text style={[styles.sectionTitle, { color: themeColors.primaryText }]}>{t('budgetAnalysis')}</Text>
+        <Text style={[styles.sectionTitle, { color: themeColors.primaryText }]}>{t('home.budgetAnalysis')}</Text>
         <BudgetAnalysisCard budgetData={budgetAnalysis} />
       </View>
 
       <View style={[styles.section, { backgroundColor: themeColors.card }]}>
-        <Text style={[styles.sectionTitle, { color: themeColors.primaryText }]}>{t('recentTransactions')}</Text>
+        <Text style={[styles.sectionTitle, { color: themeColors.primaryText }]}>{t('home.recentTransactions')}</Text>
         {getRecentTransactions().length > 0 ? (
           getRecentTransactions().map((transaction: any) => (
-            <View 
-              key={`${transaction.type}-${transaction.id}`} 
-              style={[
-                styles.transactionItem, 
-                { borderBottomColor: themeColors.border }
-              ]}
-            >
-              <View>
-                <Text style={[styles.transactionCategory, { color: themeColors.primaryText }]}>
-                  {t(transaction.category.toLowerCase()) || transaction.category}
-                </Text>
-                <Text style={[styles.transactionDate, { color: themeColors.secondaryText }]}>
-                  {new Date(transaction.date).toLocaleDateString()}
-                </Text>
-              </View>
-              <Text style={[
-                styles.transactionAmount,
-                transaction.type === 'income' ? styles.incomeText : styles.expenseText
-              ]}>
-                {transaction.type === 'income' ? '+' : '-'}{formatAmount(transaction.amount)}
-              </Text>
-            </View>
-          ))
+            renderTransactionItem(transaction, transaction.type as 'income' | 'expense'))
+          )
         ) : (
           <View style={styles.emptyState}>
             <Text style={[styles.emptyStateText, { color: themeColors.secondaryText }]}>
-              {t('noTransactions')}
+              {t('home.noTransactions')}
             </Text>
           </View>
         )}
@@ -629,6 +740,11 @@ const styles = StyleSheet.create({
     borderBottomWidth: 1,
     borderBottomColor: '#f0f0f0',
   },
+  transactionHeader: {
+    flexDirection: 'row',
+    justifyContent: 'space-between',
+    alignItems: 'center',
+  },
   transactionCategory: {
     fontSize: 16,
     fontWeight: '500',
@@ -642,11 +758,30 @@ const styles = StyleSheet.create({
     fontSize: 16,
     fontWeight: 'bold',
   },
-  incomeText: {
-    color: '#2ecc71',
+  transactionDescription: {
+    fontSize: 14,
+    marginTop: 4,
   },
-  expenseText: {
-    color: '#e74c3c',
+  transactionFooter: {
+    flexDirection: 'row',
+    justifyContent: 'space-between',
+    alignItems: 'center',
+    marginTop: 8,
+  },
+  actionButtons: {
+    flexDirection: 'row',
+    gap: 8,
+  },
+  actionButton: {
+    paddingHorizontal: 12,
+    paddingVertical: 6,
+    borderRadius: 4,
+    marginLeft: 8,
+  },
+  actionButtonText: {
+    color: 'white',
+    fontSize: 12,
+    fontWeight: '500',
   },
   emptyState: {
     alignItems: 'center',

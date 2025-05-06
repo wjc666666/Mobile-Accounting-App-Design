@@ -392,3 +392,246 @@ app.post('/api/import', verifyToken, async (req, res) => {
         res.status(500).json({ error: "Failed to import transactions", details: err.message });
     }
 });
+
+// ✅ 删除收入记录
+app.delete("/income/:id", verifyToken, (req, res) => {
+    const incomeId = req.params.id;
+    const sql = "DELETE FROM income WHERE id = ? AND user_id = ?";
+    
+    query(sql, [incomeId, req.userId])
+        .then((result) => {
+            if (result.affectedRows === 0) {
+                return res.status(404).json({ error: "Income record not found or unauthorized" });
+            }
+            console.log("✅ Income deleted for user:", req.userId);
+            res.json({ message: "Income deleted successfully!" });
+        })
+        .catch((err) => {
+            console.error("❌ Failed to delete income:", err.message);
+            res.status(500).json({ error: "Failed to delete income: " + err.message });
+        });
+});
+
+// ✅ 删除支出记录
+app.delete("/expenses/:id", verifyToken, (req, res) => {
+    const expenseId = req.params.id;
+    const sql = "DELETE FROM expenses WHERE id = ? AND user_id = ?";
+    
+    query(sql, [expenseId, req.userId])
+        .then((result) => {
+            if (result.affectedRows === 0) {
+                return res.status(404).json({ error: "Expense record not found or unauthorized" });
+            }
+            console.log("✅ Expense deleted for user:", req.userId);
+            res.json({ message: "Expense deleted successfully!" });
+        })
+        .catch((err) => {
+            console.error("❌ Failed to delete expense:", err.message);
+            res.status(500).json({ error: "Failed to delete expense: " + err.message });
+        });
+});
+
+// ✅ 更新收入记录
+app.put("/income/:id", verifyToken, (req, res) => {
+    const incomeId = req.params.id;
+    const { amount, category, date, description } = req.body;
+    
+    if (!amount || !category || !date) {
+        return res.status(400).json({ error: "Missing required fields" });
+    }
+    
+    const sql = "UPDATE income SET amount = ?, category = ?, date = ?, description = ? WHERE id = ? AND user_id = ?";
+    query(sql, [amount, category, date, description, incomeId, req.userId])
+        .then((result) => {
+            if (result.affectedRows === 0) {
+                return res.status(404).json({ error: "Income record not found or unauthorized" });
+            }
+            console.log("✅ Income updated for user:", req.userId);
+            res.json({ message: "Income updated successfully!" });
+        })
+        .catch((err) => {
+            console.error("❌ Failed to update income:", err.message);
+            res.status(500).json({ error: "Failed to update income: " + err.message });
+        });
+});
+
+// ✅ 更新支出记录
+app.put("/expenses/:id", verifyToken, (req, res) => {
+    const expenseId = req.params.id;
+    const { amount, category, date, description } = req.body;
+    
+    if (!amount || !category || !date) {
+        return res.status(400).json({ error: "Missing required fields" });
+    }
+    
+    const sql = "UPDATE expenses SET amount = ?, category = ?, date = ?, description = ? WHERE id = ? AND user_id = ?";
+    query(sql, [amount, category, date, description, expenseId, req.userId])
+        .then((result) => {
+            if (result.affectedRows === 0) {
+                return res.status(404).json({ error: "Expense record not found or unauthorized" });
+            }
+            console.log("✅ Expense updated for user:", req.userId);
+            res.json({ message: "Expense updated successfully!" });
+        })
+        .catch((err) => {
+            console.error("❌ Failed to update expense:", err.message);
+            res.status(500).json({ error: "Failed to update expense: " + err.message });
+        });
+});
+
+// ✅ 获取用户的所有财务目标
+app.get("/goals", verifyToken, (req, res) => {
+    console.log("✅ Token Verified, User:", req.userId);
+    const sql = "SELECT * FROM goals WHERE user_id = ? ORDER BY created_at DESC";
+    
+    query(sql, [req.userId])
+        .then((results) => {
+            // 转换数值类型确保前端接收到的是数字而不是字符串
+            const goals = results.map(goal => {
+                return {
+                    ...goal,
+                    targetAmount: parseFloat(goal.target_amount) || 0,
+                    currentAmount: parseFloat(goal.current_amount) || 0,
+                    deadline: goal.deadline,
+                    status: goal.status || 'active'
+                };
+            });
+            console.log("Goals retrieved:", goals.length);
+            res.json(goals);
+        })
+        .catch((err) => {
+            console.error("Error retrieving goals:", err);
+            res.status(500).json({ error: "Failed to retrieve goals" });
+        });
+});
+
+// 添加新的财务目标
+app.post("/goals", verifyToken, (req, res) => {
+    console.log("✅ Adding goal for user:", req.userId);
+    console.log("Goal data:", req.body);
+    
+    const { name, targetAmount, currentAmount, deadline, description, status } = req.body;
+    
+    if (!name || targetAmount === undefined || targetAmount === null) {
+        return res.status(400).json({ error: "Name and target amount are required" });
+    }
+    
+    // 处理日期格式，将ISO字符串转换为YYYY-MM-DD格式
+    let formattedDeadline = null;
+    if (deadline) {
+        try {
+            // 尝试转换日期格式
+            const dateObj = new Date(deadline);
+            if (!isNaN(dateObj.getTime())) {
+                formattedDeadline = dateObj.toISOString().split('T')[0];
+                console.log("Formatted deadline:", formattedDeadline);
+            } else {
+                console.error("Invalid date format:", deadline);
+            }
+        } catch (err) {
+            console.error("Error formatting date:", err);
+        }
+    }
+    
+    const sql = "INSERT INTO goals (user_id, name, target_amount, current_amount, deadline, description, status) VALUES (?, ?, ?, ?, ?, ?, ?)";
+    const params = [
+        req.userId, 
+        name, 
+        parseFloat(targetAmount) || 0, 
+        parseFloat(currentAmount) || 0, 
+        formattedDeadline, 
+        description || "", 
+        status || "active"
+    ];
+    
+    console.log("SQL params:", params);
+    
+    query(sql, params)
+        .then((result) => {
+            console.log("Goal added:", result.insertId);
+            res.status(201).json({ 
+                id: result.insertId,
+                message: "Goal added successfully" 
+            });
+        })
+        .catch((err) => {
+            console.error("Error adding goal:", err);
+            res.status(500).json({ error: "Failed to add goal" });
+        });
+});
+
+// 更新财务目标
+app.put("/goals/:id", verifyToken, (req, res) => {
+    const goalId = req.params.id;
+    const { name, targetAmount, currentAmount, deadline, description, status } = req.body;
+    
+    console.log("✅ Updating goal for user:", req.userId);
+    console.log("Goal data:", req.body);
+    
+    if (!goalId) {
+        return res.status(400).json({ error: "Goal ID is required" });
+    }
+    
+    // 处理日期格式，将ISO字符串转换为YYYY-MM-DD格式
+    let formattedDeadline = null;
+    if (deadline) {
+        try {
+            // 尝试转换日期格式
+            const dateObj = new Date(deadline);
+            if (!isNaN(dateObj.getTime())) {
+                formattedDeadline = dateObj.toISOString().split('T')[0];
+                console.log("Formatted deadline:", formattedDeadline);
+            } else {
+                console.error("Invalid date format:", deadline);
+            }
+        } catch (err) {
+            console.error("Error formatting date:", err);
+        }
+    }
+    
+    const sql = "UPDATE goals SET name = ?, target_amount = ?, current_amount = ?, deadline = ?, description = ?, status = ? WHERE id = ? AND user_id = ?";
+    const params = [
+        name || "", 
+        parseFloat(targetAmount) || 0, 
+        parseFloat(currentAmount) || 0, 
+        formattedDeadline, 
+        description || "", 
+        status || "active", 
+        goalId, 
+        req.userId
+    ];
+    
+    console.log("SQL params for update:", params);
+    
+    query(sql, params)
+        .then((result) => {
+            if (result.affectedRows === 0) {
+                return res.status(404).json({ error: "Goal not found or unauthorized" });
+            }
+            console.log("Goal updated successfully");
+            res.json({ message: "Goal updated successfully" });
+        })
+        .catch((err) => {
+            console.error("Error updating goal:", err);
+            res.status(500).json({ error: "Failed to update goal" });
+        });
+});
+
+// ✅ 删除财务目标
+app.delete("/goals/:id", verifyToken, (req, res) => {
+    const goalId = req.params.id;
+    const sql = "DELETE FROM goals WHERE id = ? AND user_id = ?";
+    
+    query(sql, [goalId, req.userId])
+        .then((result) => {
+            if (result.affectedRows === 0) {
+                return res.status(404).json({ error: "Financial goal not found or unauthorized" });
+            }
+            console.log("✅ Financial goal deleted for user:", req.userId);
+            res.json({ message: "Financial goal deleted successfully!" });
+        })
+        .catch((err) => {
+            console.error("❌ Failed to delete financial goal:", err.message);
+            res.status(500).json({ error: "Failed to delete financial goal: " + err.message });
+        });
+});

@@ -142,7 +142,6 @@ export const incomeAPI = {
     description: string;
   }) => {
     try {
-      // Send all fields including description
       const response = await api.post('/income', incomeData);
       return response.data;
     } catch (error) {
@@ -158,6 +157,33 @@ export const incomeAPI = {
       return response.data;
     } catch (error) {
       console.error('Failed to get income records:', error);
+      throw error;
+    }
+  },
+
+  // Delete income record
+  deleteIncome: async (id: number) => {
+    try {
+      const response = await api.delete(`/income/${id}`);
+      return response.data;
+    } catch (error) {
+      console.error('Failed to delete income record:', error);
+      throw error;
+    }
+  },
+
+  // Update income record
+  updateIncome: async (id: number, incomeData: {
+    amount: number;
+    category: string;
+    date: string;
+    description: string;
+  }) => {
+    try {
+      const response = await api.put(`/income/${id}`, incomeData);
+      return response.data;
+    } catch (error) {
+      console.error('Failed to update income record:', error);
       throw error;
     }
   },
@@ -192,6 +218,31 @@ export const expenseAPI = {
       throw error;
     }
   },
+
+  deleteExpense: async (id: number) => {
+    try {
+      const response = await api.delete(`/expenses/${id}`);
+      return response.data;
+    } catch (error) {
+      console.error('Error deleting expense:', error);
+      throw error;
+    }
+  },
+
+  updateExpense: async (id: number, expenseData: {
+    amount: number;
+    category: string;
+    date: string;
+    description: string;
+  }) => {
+    try {
+      const response = await api.put(`/expenses/${id}`, expenseData);
+      return response.data;
+    } catch (error) {
+      console.error('Error updating expense:', error);
+      throw error;
+    }
+  }
 };
 
 // Budget analysis API
@@ -327,6 +378,102 @@ Consider these options:
       throw error;
     }
   },
+};
+
+// Financial goals API
+export const financialGoalsAPI = {
+  // 添加财务目标
+  addGoal: async (goalData: { 
+    name: string; 
+    targetAmount: number; 
+    currentAmount: number; 
+    deadline: string; 
+    description: string;
+    status: 'active' | 'completed';
+  }) => {
+    try {
+      const response = await api.post('/goals', goalData);
+      return response.data;
+    } catch (error) {
+      console.error('Failed to add financial goal:', error);
+      throw error;
+    }
+  },
+
+  // 获取所有财务目标
+  getGoals: async () => {
+    try {
+      const response = await api.get('/goals');
+      return response.data;
+    } catch (error) {
+      console.error('Failed to get financial goals:', error);
+      // 模拟数据，当后端还未实现时使用
+      return [
+        {
+          id: 1,
+          name: '紧急基金',
+          targetAmount: 50000,
+          currentAmount: 20000,
+          deadline: '2023-12-31',
+          description: '建立6个月的生活费用应急基金',
+          status: 'active',
+          createdAt: '2023-06-01'
+        },
+        {
+          id: 2,
+          name: '度假旅行',
+          targetAmount: 15000,
+          currentAmount: 5000,
+          deadline: '2023-10-15',
+          description: '存钱用于年底旅行',
+          status: 'active',
+          createdAt: '2023-06-15'
+        }
+      ];
+    }
+  },
+
+  // 更新财务目标
+  updateGoal: async (id: number, goalData: {
+    name?: string;
+    targetAmount?: number;
+    currentAmount?: number;
+    deadline?: string;
+    description?: string;
+    status?: 'active' | 'completed';
+  }) => {
+    try {
+      const response = await api.put(`/goals/${id}`, goalData);
+      return response.data;
+    } catch (error) {
+      console.error('Failed to update financial goal:', error);
+      throw error;
+    }
+  },
+
+  // 删除财务目标
+  deleteGoal: async (id: number) => {
+    try {
+      const response = await api.delete(`/goals/${id}`);
+      return response.data;
+    } catch (error) {
+      console.error('Failed to delete financial goal:', error);
+      throw error;
+    }
+  },
+  
+  // 从AI建议中导入目标
+  importFromAI: async (aiAdvice: string) => {
+    try {
+      // 在实际后端中，可能会有一个专门的API处理这个功能
+      // 这里我们假设是直接从AI回复中提取有用信息创建新目标
+      const response = await api.post('/goals/import-from-ai', { aiAdvice });
+      return response.data;
+    } catch (error) {
+      console.error('Failed to import goal from AI advice:', error);
+      throw error;
+    }
+  }
 };
 
 export default api; 

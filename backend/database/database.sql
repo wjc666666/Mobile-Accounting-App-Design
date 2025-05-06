@@ -51,10 +51,26 @@ CREATE TABLE IF NOT EXISTS budgets (
     FOREIGN KEY (user_id) REFERENCES users(id) ON DELETE CASCADE
 );
 
+-- 创建财务目标表
+CREATE TABLE IF NOT EXISTS goals (
+    id INT AUTO_INCREMENT PRIMARY KEY,
+    user_id INT NOT NULL,
+    name VARCHAR(100) NOT NULL,
+    target_amount DECIMAL(10, 2) NOT NULL,
+    current_amount DECIMAL(10, 2) DEFAULT 0,
+    deadline DATE,
+    description TEXT,
+    status VARCHAR(20) DEFAULT 'active',
+    created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+    updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
+    FOREIGN KEY (user_id) REFERENCES users(id) ON DELETE CASCADE
+);
+
 -- 添加索引以提高查询性能
 CREATE INDEX idx_income_user_id ON income(user_id);
 CREATE INDEX idx_income_date ON income(date);
 CREATE INDEX idx_expenses_user_id ON expenses(user_id);
 CREATE INDEX idx_expenses_date ON expenses(date);
 CREATE INDEX idx_expenses_category ON expenses(category);
-CREATE INDEX idx_budgets_user_id ON budgets(user_id); 
+CREATE INDEX idx_budgets_user_id ON budgets(user_id);
+CREATE INDEX idx_goals_user_id ON goals(user_id); 

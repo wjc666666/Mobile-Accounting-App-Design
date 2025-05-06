@@ -336,7 +336,7 @@ function getMockAlipayBills(_startDate: string, _endDate: string): ImportedTrans
       date: '2025-03-10',
       amount: 1000.0,
       description: '微信红包',
-      category: 'Income',
+      category: 'gift',
       type: 'income',
       source: 'alipay'
     }
@@ -380,7 +380,7 @@ function getMockWeChatBills(_startDate: string, _endDate: string): ImportedTrans
       date: '2025-03-05',
       amount: 500.0,
       description: '工资',
-      category: 'Income',
+      category: 'salary',
       type: 'income',
       source: 'wechat'
     }

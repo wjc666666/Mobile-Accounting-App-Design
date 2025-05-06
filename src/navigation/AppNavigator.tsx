@@ -1,5 +1,4 @@
 import React from 'react';
-import { NavigationContainer, DefaultTheme, DarkTheme } from '@react-navigation/native';
 import { createBottomTabNavigator } from '@react-navigation/bottom-tabs';
 import { createStackNavigator } from '@react-navigation/stack';
 import { Text, View, StyleSheet, ActivityIndicator } from 'react-native';
@@ -14,40 +13,17 @@ import LoginScreen from '../screens/LoginScreen';
 import RegisterScreen from '../screens/RegisterScreen';
 import TestScreen from '../screens/TestScreen';
 import FinanceAIScreen from '../screens/FinanceAIScreen';
+import MyPlanScreen from '../screens/MyPlanScreen';
 
 // Import auth and theme contexts
 import { useAuth } from '../utils/AuthContext';
 import { useTheme, lightTheme, darkTheme } from '../utils/ThemeContext';
+import { useLocalization } from '../utils/LocalizationContext';
 
 // Create tab and stack navigators
 const Tab = createBottomTabNavigator();
 const Stack = createStackNavigator();
 const AuthStack = createStackNavigator();
-
-// 自定义导航主题
-const customLightTheme = {
-  ...DefaultTheme,
-  colors: {
-    ...DefaultTheme.colors,
-    primary: lightTheme.primary,
-    background: lightTheme.background,
-    card: lightTheme.card,
-    text: lightTheme.text,
-    border: lightTheme.border,
-  }
-};
-
-const customDarkTheme = {
-  ...DarkTheme,
-  colors: {
-    ...DarkTheme.colors,
-    primary: darkTheme.primary,
-    background: darkTheme.background,
-    card: darkTheme.card,
-    text: darkTheme.text,
-    border: darkTheme.border,
-  }
-};
 
 // Custom tab bar icon component
 const TabIcon = ({ name, focused }: { name: string; focused: boolean }) => {
@@ -126,6 +102,15 @@ const FinanceAIStack = () => {
   );
 };
 
+// My Plan stack navigator
+const MyPlanStack = () => {
+  return (
+    <Stack.Navigator screenOptions={{ headerShown: false }}>
+      <Stack.Screen name="MyPlanMain" component={MyPlanScreen} />
+    </Stack.Navigator>
+  );
+};
+
 // Settings stack navigator
 const SettingsStack = () => {
   return (
@@ -139,6 +124,7 @@ const SettingsStack = () => {
 // 主应用导航（已登录）
 const MainAppNavigator = () => {
   const { isDarkMode } = useTheme();
+  const { t } = useLocalization();
   const themeColors = isDarkMode ? darkTheme : lightTheme;
   
   return (
@@ -160,83 +146,68 @@ const MainAppNavigator = () => {
         name="Home"
         component={HomeStack}
         options={{
-          tabBarIcon: ({ focused }) => <TabIcon name="Home" focused={focused} />,
+          tabBarIcon: ({ focused }) => <TabIcon name={t('navigation.home')} focused={focused} />,
         }}
       />
       <Tab.Screen
         name="Income"
         component={IncomeStack}
         options={{
-          tabBarIcon: ({ focused }) => <TabIcon name="Income" focused={focused} />,
+          tabBarIcon: ({ focused }) => <TabIcon name={t('navigation.income')} focused={focused} />,
         }}
       />
       <Tab.Screen
         name="Expense"
         component={ExpenseStack}
         options={{
-          tabBarIcon: ({ focused }) => <TabIcon name="Expense" focused={focused} />,
+          tabBarIcon: ({ focused }) => <TabIcon name={t('navigation.expense')} focused={focused} />,
         }}
       />
       <Tab.Screen
         name="Statistics"
         component={StatisticsStack}
         options={{
-          tabBarIcon: ({ focused }) => <TabIcon name="Stats" focused={focused} />,
+          tabBarIcon: ({ focused }) => <TabIcon name={t('navigation.statistics')} focused={focused} />,
         }}
       />
       <Tab.Screen
         name="FinanceAI"
         component={FinanceAIStack}
         options={{
-          tabBarIcon: ({ focused }) => <TabIcon name="AI" focused={focused} />,
+          tabBarIcon: ({ focused }) => <TabIcon name={t('navigation.financeAI')} focused={focused} />,
+        }}
+      />
+      <Tab.Screen
+        name="MyPlan"
+        component={MyPlanStack}
+        options={{
+          tabBarIcon: ({ focused }) => <TabIcon name={t('navigation.plan')} focused={focused} />,
         }}
       />
       <Tab.Screen
         name="Settings"
         component={SettingsStack}
         options={{
-          tabBarIcon: ({ focused }) => <TabIcon name="Settings" focused={focused} />,
+          tabBarIcon: ({ focused }) => <TabIcon name={t('navigation.settings')} focused={focused} />,
         }}
       />
     </Tab.Navigator>
   );
 };
 
-// Main app navigator
 const AppNavigator = () => {
-  const { isLoading, isLoggedIn, user } = useAuth();
+  const { isLoading, isLoggedIn } = useAuth();
   const { isDarkMode } = useTheme();
-
-  console.log('AppNavigator渲染:', { isLoading, isLoggedIn, user, isDarkMode });
   
-  const themeColors = isDarkMode ? darkTheme : lightTheme;
-  const navigationTheme = isDarkMode ? customDarkTheme : customLightTheme;
-
   if (isLoading) {
     return (
-      <View style={[styles.loadingContainer, { backgroundColor: themeColors.background }]}>
-        <ActivityIndicator size="large" color={themeColors.primary} />
-        <Text style={[styles.loadingText, { color: themeColors.primary }]}>Loading...</Text>
+      <View style={styles.loadingContainer}>
+        <ActivityIndicator size="large" color={isDarkMode ? darkTheme.primary : lightTheme.primary} />
       </View>
     );
   }
 
-  // 在渲染前记录状态
-  if (isLoggedIn) {
-    console.log('渲染主应用导航');
-  } else {
-    console.log('渲染认证导航');
-  }
-
-  return (
-    <NavigationContainer
-      theme={navigationTheme}
-      onStateChange={(state) => console.log('导航状态变化:', state)}
-      onReady={() => console.log('导航容器已准备好')}
-    >
-      {isLoggedIn ? <MainAppNavigator /> : <AuthNavigator />}
-    </NavigationContainer>
-  );
+  return isLoggedIn ? <MainAppNavigator /> : <AuthNavigator />;
 };
 
 const styles = StyleSheet.create({

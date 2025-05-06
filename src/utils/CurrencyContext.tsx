@@ -76,12 +76,15 @@ export const CurrencyProvider: React.FC<{ children: ReactNode }> = ({ children }
     }
     
     try {
+      // 先将金额根据当前货币的汇率进行转换（假设后端存储的是USD）
+      const convertedAmount = convertAmount(amount, 'USD', currency);
+      
       // 根据货币格式化数字
       if (currency === 'JPY' || currency === 'CNY') {
         // 日元和人民币通常不显示小数
-        return `${currencySymbols[currency]}${Math.round(amount).toLocaleString()}`;
+        return `${currencySymbols[currency]}${Math.round(convertedAmount).toLocaleString()}`;
       } else {
-        return `${currencySymbols[currency]}${amount.toFixed(2)}`;
+        return `${currencySymbols[currency]}${convertedAmount.toFixed(2)}`;
       }
     } catch (error) {
       console.error('Format amount error:', error, 'Amount value:', amount);
@@ -92,10 +95,18 @@ export const CurrencyProvider: React.FC<{ children: ReactNode }> = ({ children }
   // 货币转换
   const convertAmount = (amount: number, fromCurrency: CurrencyCode, toCurrency: CurrencyCode): number => {
     if (fromCurrency === toCurrency) return amount;
+    
+    // 确保金额是有效数字
+    if (amount === undefined || amount === null || isNaN(amount)) {
+      return 0;
+    }
 
     // 先转换为USD，再转换为目标货币
     const amountInUSD = amount / exchangeRates[fromCurrency];
-    return amountInUSD * exchangeRates[toCurrency];
+    const convertedAmount = amountInUSD * exchangeRates[toCurrency];
+    
+    // 四舍五入到两位小数，避免浮点数计算误差
+    return Math.round(convertedAmount * 100) / 100;
   };
 
   // 获取货币符号
