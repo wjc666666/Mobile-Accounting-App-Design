@@ -42,7 +42,8 @@ JCEco/
 │   ├── components/         # Reusable UI components
 │   │   ├── BudgetCard.tsx
 │   │   ├── CategorySelector.tsx
-│   │   └── TransactionList.tsx
+│   │   ├── TransactionList.tsx
+│   │   └── TransactionItem.tsx # Individual transaction display component
 │   ├── navigation/         # Navigation configuration
 │   │   └── AppNavigator.tsx # Main navigation setup
 │   ├── screens/            # Application screens
@@ -56,14 +57,19 @@ JCEco/
 │   │   ├── SettingsScreen.tsx # App settings
 │   │   ├── TestScreen.tsx  # Testing features
 │   │   └── FinanceAIScreen.tsx # AI Financial Advisor
-│   └── utils/              # Utility functions and contexts
-│       ├── api.ts          # API client and endpoints
-│       ├── AuthContext.tsx # Authentication provider
-│       ├── CurrencyContext.tsx # Currency conversion
-│       ├── ThemeContext.tsx # Theme provider for dark/light mode
-│       ├── LocalizationContext.tsx # Multilanguage support
-│       ├── config.ts       # Application configuration
-│       └── env.d.ts        # TypeScript definitions for env variables
+│   ├── utils/              # Utility functions and contexts
+│   │   ├── api.ts          # API client and endpoints
+│   │   ├── paymentApis.ts  # Payment integration APIs and mock data
+│   │   ├── AuthContext.tsx # Authentication provider
+│   │   ├── CurrencyContext.tsx # Currency conversion
+│   │   ├── ThemeContext.tsx # Theme provider for dark/light mode
+│   │   ├── LocalizationContext.tsx # Multilanguage support
+│   │   ├── config.ts       # Application configuration
+│   │   └── env.d.ts        # TypeScript definitions for env variables
+│   └── i18n/               # Internationalization resources
+│       ├── en.ts           # English translations
+│       ├── zh.ts           # Chinese translations
+│       └── es.ts           # Spanish translations
 ├── backend/                # Node.js backend
 │   ├── controllers/        # Route controllers
 │   │   ├── authController.js
@@ -91,7 +97,7 @@ JCEco/
 │   │   └── setup.sql       # Setup script
 │   ├── .env                # Environment variables (not in Git)
 │   ├── package.json        # Backend dependencies
-│   └── server.js           # Express server
+│   └── server.js           # Express server with DELETE and PUT endpoints
 ├── .bundle/                # Ruby bundle configuration
 ├── .env                    # Frontend environment variables
 ├── .idea/                  # IDE configuration
@@ -143,6 +149,18 @@ JCEco/
 - **Real-time Currency Conversion**: Convert amounts between different currencies
 
 ## Recent Updates
+
+### API Enhancements
+- Added DELETE endpoint for expense records at `/expenses/:id`
+- Added PUT endpoint for updating expense records at `/expenses/:id`
+- Improved authentication middleware for more secure API access
+- Enhanced error handling for better client feedback
+
+### Internationalization Fixes
+- Fixed issues with Chinese text display in transaction lists
+- Corrected translation key structure in LocalizationContext
+- Updated category values in mock data to use proper categories
+- Improved category translation logic in renderTransactionItem function
 
 ### Dark Mode Implementation
 - Added comprehensive theme system with light and dark modes
@@ -422,6 +440,27 @@ The app supports multiple languages to cater to a global user base:
 - **Auth**: JWT Token Required
 - **Response**: List of expense records
 
+#### Update Expense
+- **URL**: `/api/expenses/:id`
+- **Method**: `PUT`
+- **Auth**: JWT Token Required
+- **Body**:
+  ```json
+  {
+    "amount": "number",
+    "category": "string",
+    "date": "YYYY-MM-DD",
+    "description": "string"
+  }
+  ```
+- **Response**: Updated expense record
+
+#### Delete Expense
+- **URL**: `/api/expenses/:id`
+- **Method**: `DELETE`
+- **Auth**: JWT Token Required
+- **Response**: Success message and deleted expense ID
+
 ### Budget Analysis
 
 #### Get Budget Analysis
@@ -516,3 +555,30 @@ This project is licensed under the MIT License - see the LICENSE file for detail
 - **Cloud Backup**: Secure cloud backup for financial data
 - **Family Sharing**: Share financial information with family members
 - **Receipt Scanning**: OCR integration for automated expense entry
+
+## Troubleshooting
+
+### Android App Installation Issues
+
+If you encounter the "not enough space" error when installing the app on Android:
+
+1. **Free up internal storage**:
+   - Clear app caches: Settings > Apps > [App Name] > Storage > Clear Cache
+   - Uninstall unused apps
+   - Move photos, videos, and files to external storage or cloud storage
+
+2. **Check your device storage**:
+   - Go to Settings > Storage to see available space
+   - At least 500MB of free space is recommended for app installation
+
+3. **Developer options**:
+   - If you're a developer, install to external storage if available
+   - Use a device with more storage for testing
+
+### Chinese Text Display Issues
+
+If Chinese text is only displaying partially in the app:
+
+1. **Check translation keys**: Ensure all translation keys in `LocalizationContext.tsx` are properly structured and referenced
+2. **Verify category values**: Make sure transaction categories in `paymentApis.ts` use proper category values instead of generic ones like "Income"
+3. **Review rendering functions**: The `renderTransactionItem` function has been updated to better handle non-standard category names
